@@ -1,0 +1,21 @@
+meta {
+  name: Create (absolute)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/v1/messages/https://done.gotrequests.com/some-user-path/
+  body: json
+  auth: none
+}
+
+headers {
+  Done-Not-Before: 1700794800
+}
+
+body:json {
+  {
+    "invoice_id": "invoice_1234567890"
+  }
+}
