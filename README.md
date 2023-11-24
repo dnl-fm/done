@@ -1,4 +1,4 @@
-<img src="done.jpg?sanitize=true" alt="Done logo" width="350" align="right" style="max-width: 40vw;">
+<img src="https://raw.githubusercontent.com/dnl-fm/done/main/done.jpg?sanitize=true" alt="Done logo" width="350" align="right" style="max-width: 40vw;">
 
 # Message sent? Done!
 
