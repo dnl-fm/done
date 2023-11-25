@@ -15,6 +15,18 @@ __Key features:__
 - Failure-Callbacks
 - Dead Letter Queues
 
+## Content
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [What about Deno's native queue?](#what-about-denos-native-queue)
+- [Setup on Deno Deploy](#setup-on-deno-deploy)
+- [API Endpoints](#api-endpoints)
+- [Credits](#credits)
+- [Who is DNL](#who-is-dnl)
+- [Feedback](#feedback)
+- [License](#license)
+
 ## Introduction
 
 Done isn't just another message queue service; it's a celebration of simplicity and open-source ingenuity. It's perfect for those who like their tech like they like their coffee: strong, straightforward, and capable of keeping you up at night (in a good way, we promise!).
@@ -209,17 +221,31 @@ await fetch('https://your-done-host.com/http://your-callback-url.com/some-path/1
 });
 ```
 
+## What about Deno's native Queue?
+
+[Deno's native queue](https://deno.com/blog/queues) is super handy for instant action in your Deno Deploy projects, like firing emails or sending requests on the fly. But when it comes to tracking those enqueued little critters, it's like herding cats. You'd have to play double duty, shuffling each message into a KV store and keeping tabs on their every move. Thinking of delaying a message? You've got a week, max. That's it.
+
+Enter Done - your new best bud in the messaging realm. This isn't just another tool; it's a developer's dream sidekick _\*cough\*_. Picture it stepping out of Deno's shadow, ready to serve any app, anywhere. Done keeps an eagle eye on all messages and their states, making callbacks with custom headers to any external service like it's no big deal.
+
+And when it comes to delays, Done laughs in the face of 7-day limits. Whether you're plotting to send a "see you in two months" email or scheduling an invoice way down the line, Done's your time-traveling ally. No delay cap, just boundless possibilities.
+
+So, here's the deal: Done is unapologetically developer-friendly. No complicated setups, no riddles to solve. It's as transparent and straightforward as it gets. Just the way you like it.
+
+__P.S. Big shoutout to the Deno team! Without Deno Queues and Deno KV, this tool would've been a no-go. Huge thanks for their fantastic work – couldn't have done it without them!__ 🙌🦕
+
 ## Setup on Deno Deploy
 
-All you need is an environment variable `AUTH_TOKEN`. _Done_ checks your authorization bearer token against that env variable.
+Setup a project over at [Deno Deploy](https://deno.com/deploy). Either you deploy Done yourself or you connect it with your Github repository to deploy it automatically.
 
+When this is "done", all you need is an environment variable `AUTH_TOKEN` which you can create in your project settings. With that _Done_ can validate your authorization bearer token against that env variable.
+
+With that, you've got everything in place like a squirrel with a perfectly organized nut collection before winter! 🐿️
 
 ## API Endpoints
 
-There are a couple of API endpoints defined as a [bruno collection](https://github.com/usebruno/bruno).
+There are a couple of API endpoints defined as a [bruno collection](https://github.com/usebruno/bruno). The collection can be [found here](docs/bruno-collection/).
 
-The collection can be [found here](docs/bruno-collection/).
-
+There is also another helping hand in the game: [gotrequests.com](https://github.com/dnl-fm/gotrequests.com). Just like our mentioned diligent squirrel preparing for winter by collecting nuts, it helps you collect incoming requests with all their attached data. Before you connect your real-world projects, use `gotrequests.com` to simulate how a callback from _Done_ would look. It's like making sure every nut is in place before your project launches!
 
 ## Credits
 
@@ -231,7 +257,6 @@ While Qstash is the reliable sedan, Done is the fun convertible with the top dow
 ### Who is DNL?
 
 DNL, short for 'Dots and Lines', is a venture created by Tino Ehrich, a seasoned digital carpenter with over 20 years of experience in crafting projects and assisting businesses. DNL will specifically focus on developing projects that aim to simplify the access of information, and to develop these in the open.
-
 
 ## Feedback
 
