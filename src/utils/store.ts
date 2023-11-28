@@ -128,7 +128,7 @@ export abstract class Store {
 
   protected async _fetch<Type>(id: string) {
     // console.log(`- fetch from ${this.getStoreName()}`, { id });
-    const entry = await this.kv.get<Type>(this.buildPrimaryKey(id));
+    const entry = await this.kv.get<Type>(this.buildPrimaryKey(id), { consistency: 'eventual' });
 
     return entry.value;
   }
