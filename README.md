@@ -260,7 +260,7 @@ DNL, short for 'Dots and Lines', is a venture created by Tino Ehrich, a seasoned
 
 ## Feedback
 
-I would love to get your feedback. Drop by [Done's Discord Channel](https://discord.gg/6AtYucve). Hope to talk soon!
+I would love to get your feedback. Drop by [Done's Discord Channel](https://discord.gg/JEYJbQgnWp). Hope to talk soon!
 
 ## License
 
