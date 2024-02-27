@@ -2,7 +2,7 @@
 
 # Message sent? Done!
 
-[![Join Discord](https://discord.com/api/guilds/1177611308129075281/widget.png?style=shield)](https://discord.gg/6AtYucve)
+[![Join Discord](https://discord.com/api/guilds/1177611308129075281/widget.png?style=shield)](https://discord.gg/JEYJbQgnWp)
 [![MPL-2.0](https://img.shields.io/crates/l/kobold.svg?label=)](https://www.mozilla.org/en-US/MPL/)
 
 _Done: Your straightforward message queue solution, open-source and self-hosted on Deno Deploy._
