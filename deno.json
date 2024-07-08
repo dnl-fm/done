@@ -6,10 +6,10 @@
     "result": "https://esm.sh/ts-results@3.3.0",
     "ulid": "https://esm.sh/ulid@2.3.0",
     "generate-unique-id": "https://esm.sh/generate-unique-id@2.0.3",
-    "deep-object-diff": "https://esm.sh/deep-object-diff@1.1.9"
+    "deep-object-diff": "npm:deep-object-diff"
   },
   "tasks": {
-    "dev": "deno run -A --env=.env.local --watch --unstable src/main.ts",
+    "dev": "deno run -A --env=.env.local --watch --unstable-kv --unstable-cron src/main.ts",
     "clean": "deno fmt -q && deno lint ./src"
   },
   "lint": {
