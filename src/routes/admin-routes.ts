@@ -1,5 +1,6 @@
 import { Context, Hono } from 'hono';
 import { VERSION } from '../main.ts';
+import { MessageModel } from '../stores/message-model.ts';
 import { Store } from '../utils/store.ts';
 
 export const adminRoutes = (router: Hono, kv: Deno.Kv) => {
@@ -7,7 +8,7 @@ export const adminRoutes = (router: Hono, kv: Deno.Kv) => {
 
   baseRouter.get(`/stats`, async (ctx: Context) => {
     const stats: Record<string, number> = {};
-    const entries = kv.list({ prefix: [] });
+    const entries = kv.list<MessageModel[]>({ prefix: [] });
 
     for await (const entry of entries) {
       const isSecondary = entry.key[2] === 'secondaries';
