@@ -239,6 +239,9 @@ Setup a project over at [Deno Deploy](https://deno.com/deploy). Either you deplo
 
 When this is "done", all you need is an environment variable `AUTH_TOKEN` which you can create in your project settings. With that _Done_ can validate your authorization bearer token against that env variable.
 
+Starting from v1.1.0, you can also add `ENABLE_LOGS=true` to your environment variable to control logging. By default, logging is disabled. This should save about 2/3 of your KV writes.
+So, if saving KV writes is your thing, keep it stealthy; otherwise, let the logs roar!
+
 With that, you've got everything in place like a squirrel with a perfectly organized nut collection before winter! 🐿️
 
 ## API Endpoints
