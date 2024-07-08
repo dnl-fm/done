@@ -288,8 +288,12 @@ export abstract class Store {
     // enqueue message
     await this.kv.enqueue(log);
 
+    if (Deno.env.get('ENABLE_LOGS') !== 'true') {
+      return;
+    }
+
     // ##############################################
-    // handle logging
+    // handle logging if enabled
     let messageId: string | undefined;
 
     switch (type) {
