@@ -1,5 +1,16 @@
 {
   "version": "3",
+  "packages": {
+    "specifiers": {
+      "npm:deep-object-diff": "npm:deep-object-diff@1.1.9"
+    },
+    "npm": {
+      "deep-object-diff@1.1.9": {
+        "integrity": "sha512-Rn+RuwkmkDwCi2/oXOFS9Gsr5lJZu/yTGpK7wAaAIE75CC+LCGEZHpY6VQJa/RoJcrmaA/docWJZvYohlNkWPA==",
+        "dependencies": {}
+      }
+    }
+  },
   "remote": {
     "https://deno.land/std@0.205.0/assert/_constants.ts": "8a9da298c26750b28b326b297316cdde860bc237533b07e1337c021379e6b2a9",
     "https://deno.land/std@0.205.0/assert/_diff.ts": "58e1461cc61d8eb1eacbf2a010932bf6a05b79344b02ca38095f9b805795dc48",
@@ -155,5 +166,10 @@
     "https://esm.sh/v134/deep-object-diff@1.1.9/denonext/deep-object-diff.mjs": "146d7bd171761590d740e303fd4bc8eec56a6dca918ebb067d3c8e638b825204",
     "https://esm.sh/v135/cron-time-generator@2.0.1/denonext/cron-time-generator.mjs": "7575566b63c4b26113bfb0d266f14c8c078648a1312836d6012cdad12e398dd5",
     "https://esm.sh/zod@3.22.4": "fb3df591328a7b9662e972aa3bdbab19efdbabda9c89ade59ecedfc100bafe34"
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:deep-object-diff"
+    ]
   }
 }
