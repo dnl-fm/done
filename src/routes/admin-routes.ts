@@ -13,6 +13,11 @@ export const adminRoutes = (router: Hono, kv: Deno.Kv) => {
       const isSecondary = entry.key[2] === 'secondaries';
       const statsKey = entry.key.slice(1, isSecondary ? 5 : 2).join('/');
 
+      if (isSecondary) {
+        stats[statsKey] = entry.value.length;
+        continue;
+      }
+
       if (!stats[statsKey]) {
         stats[statsKey] = 0;
       }
