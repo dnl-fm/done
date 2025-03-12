@@ -2,7 +2,7 @@ import { err, ok, Result } from 'result';
 import { Secondary, SECONDARY_TYPE } from '../services/storage/kv-store.ts';
 import { Dates } from '../utils/dates.ts';
 import { Security } from '../utils/security.ts';
-import { AbstractKvStore } from '../utils/store.ts';
+import { AbstractKvStore } from './abstract-kv-store.ts';
 import { MESSAGE_STATUS, MessageData, MessageModel, MessageReceivedData } from './kv-message-model.ts';
 import { MessagesStoreInterface } from './messages-store-interface.ts';
 
@@ -65,9 +65,7 @@ export class KvMessagesStore extends AbstractKvStore implements MessagesStoreInt
   }
 
   async createFromReceivedData(data: MessageReceivedData) {
-    const response = await this.create({ payload: data.payload, publish_at: data.publish_at, status: MESSAGE_STATUS.CREATED }, { withId: data.id });
-
-    return ok(response);
+    return await this.create({ payload: data.payload, publish_at: data.publish_at, status: 'CREATED' }, { withId: data.id });
   }
 
   async create(data: MessageData, options?: { withId: string }) {

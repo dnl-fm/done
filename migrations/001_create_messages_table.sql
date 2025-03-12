@@ -1,4 +1,5 @@
--- Create messages table
+DROP TABLE IF EXISTS messages;
+
 CREATE TABLE IF NOT EXISTS messages (
   id TEXT PRIMARY KEY,
   payload TEXT NOT NULL,
@@ -12,6 +13,5 @@ CREATE TABLE IF NOT EXISTS messages (
   updated_at TEXT NOT NULL
 );
 
--- Create indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(status);
 CREATE INDEX IF NOT EXISTS idx_messages_publish_at ON messages(publish_at); 

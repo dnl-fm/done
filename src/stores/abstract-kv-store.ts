@@ -1,44 +1,39 @@
 import { diff } from 'deep-object-diff';
 
-import { Security } from './security.ts';
+import { Security } from '../utils/security.ts';
 
 export type HasDates = {
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 };
 
 export type Model = HasDates & {
   id: string;
 };
 
-export enum SYSTEM_MESSAGE_TYPE {
-  STORE_CREATE_EVENT = 'STORE_CREATE_EVENT',
-  STORE_UPDATE_EVENT = 'STORE_UPDATE_EVENT',
-  STORE_DELETE_EVENT = 'STORE_DELETE_EVENT',
-  MESSAGE_RECEIVED = 'MESSAGE_RECEIVED',
-  MESSAGE_QUEUED = 'MESSAGE_QUEUED',
-  MESSAGE_RETRY = 'MESSAGE_RETRY',
-}
+export type SYSTEM_MESSAGE_TYPE =
+  | 'STORE_CREATE_EVENT'
+  | 'STORE_UPDATE_EVENT'
+  | 'STORE_DELETE_EVENT'
+  | 'MESSAGE_RECEIVED'
+  | 'MESSAGE_QUEUED'
+  | 'MESSAGE_RETRY';
 
-export enum SYSTEM_MESSAGE_STATUS {
-  CREATED = 'CREATED',
-  RECEIVED = 'RECEIVED',
-  PROCESSED = 'PROCESSED',
-  IGNORE = 'IGNORE',
-}
+export type SYSTEM_MESSAGE_STATUS =
+  | 'CREATED'
+  | 'RECEIVED'
+  | 'PROCESSED'
+  | 'IGNORE';
 
 export type SystemMessage = {
   id: string;
   type: SYSTEM_MESSAGE_TYPE;
   data: unknown;
   object: string;
-  createdAt: Date;
+  created_at: Date;
 };
 
-export enum SECONDARY_TYPE {
-  ONE = 'ONE',
-  MANY = 'MANY',
-}
+export type SECONDARY_TYPE = 'ONE' | 'MANY';
 
 export type Secondary = {
   type: SECONDARY_TYPE;
@@ -100,7 +95,7 @@ export abstract class AbstractKvStore {
   }
 
   sortByUpdatedAt<Type>(models: HasDates[], direction: 'asc' | 'desc' = 'desc') {
-    models.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    models.sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
 
     if (direction === 'asc') {
       models.reverse();
@@ -139,7 +134,7 @@ export abstract class AbstractKvStore {
 
   protected async _create<Type>(data: object, options?: { withId: string }) {
     const id = options?.withId || this.buildModelIdWithPrefix();
-    const model = { id, ...data, createdAt: new Date(), updatedAt: new Date() };
+    const model = { id, ...data, created_at: new Date(), updated_at: new Date() };
     await this.kv.set(this.buildPrimaryKey(model.id), model);
 
     // HANDLE SECONDARIES
@@ -147,7 +142,7 @@ export abstract class AbstractKvStore {
     for (const secondary of this.getSecondaries(model)) {
       secondary.value = secondary.value || [model.id];
 
-      if (secondary.type === SECONDARY_TYPE.MANY) {
+      if (secondary.type === 'MANY') {
         const beforeRefs = await this._fetchSecondary(secondary.key);
         if (beforeRefs) secondary.value = [...beforeRefs, ...secondary.value];
       }
@@ -155,7 +150,7 @@ export abstract class AbstractKvStore {
       await this._addSecondary(secondary);
     }
 
-    await this.triggerWriteEvent(SYSTEM_MESSAGE_TYPE.STORE_CREATE_EVENT, { after: model });
+    await this.triggerWriteEvent('STORE_CREATE_EVENT', { after: model });
 
     return model as Type;
   }
@@ -181,7 +176,7 @@ export abstract class AbstractKvStore {
       await this._updateSecondary(secondary.type, oldKey, newKey, secondary.value || [id]);
     }
 
-    await this.triggerWriteEvent(SYSTEM_MESSAGE_TYPE.STORE_UPDATE_EVENT, { before, after });
+    await this.triggerWriteEvent('STORE_UPDATE_EVENT', { before, after });
 
     return after;
   }
@@ -196,7 +191,7 @@ export abstract class AbstractKvStore {
       await this._deleteSecondary(secondary.key);
     }
 
-    await this.triggerWriteEvent(SYSTEM_MESSAGE_TYPE.STORE_DELETE_EVENT, { before });
+    await this.triggerWriteEvent('STORE_DELETE_EVENT', { before });
   }
 
   protected async _fetchSecondary(key: string[]) {
@@ -206,7 +201,7 @@ export abstract class AbstractKvStore {
     return entry.value;
   }
 
-  protected cast<Type>(data: Omit<Type, 'id' | 'createdAt' | 'updatedAt'>): Omit<Type, 'id' | 'createdAt' | 'updatedAt'> {
+  protected cast<Type>(data: Omit<Type, 'id' | 'created_at' | 'updated_at'>): Omit<Type, 'id' | 'created_at' | 'updated_at'> {
     return data;
   }
 
@@ -232,7 +227,7 @@ export abstract class AbstractKvStore {
 
     const keyDidNotChange = oldKey.join('/') === newKey.join('/');
 
-    if (type === SECONDARY_TYPE.ONE) {
+    if (type === 'ONE') {
       if (!keyDidNotChange) await this._deleteSecondary(oldKey);
       await this._updatingSecondary(newKey, value);
       return;
@@ -283,7 +278,7 @@ export abstract class AbstractKvStore {
   }
 
   private async triggerWriteEvent(type: SYSTEM_MESSAGE_TYPE, data: { before?: unknown; after?: unknown }) {
-    const log: SystemMessage = { type, data, id: AbstractKvStore.buildLogId(), object: this.getStoreName(), createdAt: new Date() };
+    const log: SystemMessage = { type, data, id: AbstractKvStore.buildLogId(), object: this.getStoreName(), created_at: new Date() };
 
     // ##############################################
     // enqueue message
@@ -298,7 +293,7 @@ export abstract class AbstractKvStore {
     let messageId: string | undefined;
 
     switch (type) {
-      case SYSTEM_MESSAGE_TYPE.STORE_DELETE_EVENT:
+      case 'STORE_DELETE_EVENT':
         messageId = (data as { before: { id: string } }).before.id;
         break;
       default:

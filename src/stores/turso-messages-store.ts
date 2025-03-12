@@ -1,7 +1,8 @@
-import { Client } from 'libsql-core';
-import { ok, Result } from 'result';
+import { Client, Row } from 'libsql-core';
+import { err, ok, Result } from 'result';
+import { Dates } from '../utils/dates.ts';
 import { Security } from '../utils/security.ts';
-import { MESSAGE_STATUS, MessageModel } from './kv-message-model.ts';
+import { MESSAGE_STATUS, MessageData, MessageModel } from './kv-message-model.ts';
 import { MessagesStoreInterface } from './messages-store-interface.ts';
 
 export class TursoMessagesStore implements MessagesStoreInterface {
@@ -24,26 +25,166 @@ export class TursoMessagesStore implements MessagesStoreInterface {
   }
 
   async create(message: MessageModel): Promise<Result<MessageModel, string>> {
-    return ok(message);
+    try {
+      const now = new Date();
+      const result = await this.sqlite.execute({
+        sql: `INSERT INTO messages (
+          id, payload, publish_at, delivered_at, retry_at, retried, status, last_errors, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          message.id,
+          JSON.stringify(message.payload),
+          message.publish_at.toISOString(),
+          message.delivered_at?.toISOString() || null,
+          message.retry_at?.toISOString() || null,
+          message.retried || 0,
+          message.status,
+          message.last_errors ? JSON.stringify(message.last_errors) : null,
+          now.toISOString(),
+          now.toISOString(),
+        ],
+      });
+
+      if (result.rowsAffected === 1) {
+        return ok({
+          ...message,
+          created_at: now,
+          updated_at: now,
+        });
+      }
+
+      return err('Failed to create message');
+    } catch (error: unknown) {
+      return err(`Database error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async fetch(id: string): Promise<Result<MessageModel, string>> {
-    return ok({ id } as MessageModel);
+    try {
+      const result = await this.sqlite.execute({
+        sql: 'SELECT * FROM messages WHERE id = ?',
+        args: [id],
+      });
+
+      if (result.rows.length === 0) {
+        return err('Unknown message');
+      }
+
+      return ok(this.rowToModel(result.rows[0]));
+    } catch (error: unknown) {
+      return err(`Database error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async fetchByStatus(status: MESSAGE_STATUS): Promise<Result<MessageModel[], string>> {
-    return ok([]);
+    try {
+      const result = await this.sqlite.execute({
+        sql: 'SELECT * FROM messages WHERE status = ? ORDER BY created_at DESC',
+        args: [status],
+      });
+
+      return ok(result.rows.map((row) => this.rowToModel(row)));
+    } catch (error: unknown) {
+      return err(`Database error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async fetchByDate(date: Date): Promise<Result<MessageModel[], string>> {
-    return ok([]);
+    try {
+      const dateOnly = Dates.getDateOnly(date);
+      const result = await this.sqlite.execute({
+        sql: 'SELECT * FROM messages WHERE date(publish_at) = date(?) ORDER BY publish_at ASC',
+        args: [dateOnly],
+      });
+
+      return ok(result.rows.map((row) => this.rowToModel(row)));
+    } catch (error: unknown) {
+      return err(`Database error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
-  async update(id: string, message: MessageModel): Promise<Result<MessageModel, string>> {
-    return ok(message);
+  async update(id: string, data: Partial<MessageData>): Promise<Result<MessageModel, string>> {
+    try {
+      const setClauses: string[] = [];
+      const args: (string | number | null)[] = [];
+
+      // Build dynamic SET clause
+      if (data.payload) {
+        setClauses.push('payload = ?');
+        args.push(JSON.stringify(data.payload));
+      }
+      if (data.publish_at) {
+        setClauses.push('publish_at = ?');
+        args.push(data.publish_at.toISOString());
+      }
+      if (data.delivered_at) {
+        setClauses.push('delivered_at = ?');
+        args.push(data.delivered_at.toISOString());
+      }
+      if (data.retry_at) {
+        setClauses.push('retry_at = ?');
+        args.push(data.retry_at.toISOString());
+      }
+      if (typeof data.retried === 'number') {
+        setClauses.push('retried = ?');
+        args.push(data.retried);
+      }
+      if (data.status) {
+        setClauses.push('status = ?');
+        args.push(data.status);
+      }
+      if (data.last_errors) {
+        setClauses.push('last_errors = ?');
+        args.push(JSON.stringify(data.last_errors));
+      }
+
+      // Add updated_at
+      setClauses.push('updated_at = ?');
+      args.push(new Date().toISOString());
+
+      // Add WHERE clause argument
+      args.push(id);
+
+      const result = await this.sqlite.execute({
+        sql: `UPDATE messages SET ${setClauses.join(', ')} WHERE id = ?`,
+        args,
+      });
+
+      if (result.rowsAffected === 0) {
+        return err('Message not found');
+      }
+
+      return this.fetch(id);
+    } catch (error: unknown) {
+      return err(`Database error: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async delete(id: string): Promise<Result<boolean, string>> {
-    return ok(true);
+    try {
+      const result = await this.sqlite.execute({
+        sql: 'DELETE FROM messages WHERE id = ?',
+        args: [id],
+      });
+
+      return ok(result.rowsAffected > 0);
+    } catch (error: unknown) {
+      return err(`Database error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private rowToModel(row: Row): MessageModel {
+    return {
+      id: row[0] as string,
+      payload: JSON.parse(row[1] as string),
+      publish_at: new Date(row[2] as string),
+      delivered_at: row[3] ? new Date(row[3] as string) : undefined,
+      retry_at: row[4] ? new Date(row[4] as string) : undefined,
+      retried: row[5] as number,
+      status: row[6] as MESSAGE_STATUS,
+      last_errors: row[7] ? JSON.parse(row[7] as string) : undefined,
+      created_at: new Date(row[8] as string),
+      updated_at: new Date(row[9] as string),
+    };
   }
 }
