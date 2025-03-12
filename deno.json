@@ -3,7 +3,7 @@
     "hono": "jsr:@hono/hono@4.7.4",
     "zod": "npm:zod@3.24.2",
     "zod-validator": "npm:@hono/zod-validator@0.4.3",
-    "result": "npm:neverthrow@6.1.0",
+    "result": "npm:neverthrow@8.2.0",
     "ulid": "npm:ulid@2.3.0",
     "generate-unique-id": "npm:generate-unique-id@2.0.3",
     "deep-object-diff": "npm:deep-object-diff@1.1.9"

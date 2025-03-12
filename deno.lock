@@ -5,7 +5,7 @@
     "npm:@hono/zod-validator@0.4.3": "0.4.3_hono@4.7.4_zod@3.24.2",
     "npm:deep-object-diff@1.1.9": "1.1.9",
     "npm:generate-unique-id@2.0.3": "2.0.3",
-    "npm:neverthrow@6.1.0": "6.1.0",
+    "npm:neverthrow@8.2.0": "8.2.0",
     "npm:ts-results@3.3.0": "3.3.0",
     "npm:ulid@2.3.0": "2.3.0",
     "npm:zod@3.24.2": "3.24.2"
@@ -23,6 +23,9 @@
         "zod"
       ]
     },
+    "@rollup/rollup-linux-x64-gnu@4.34.8": {
+      "integrity": "sha512-8y7ED8gjxITUltTUEJLQdgpbPh1sUQ0kMTmufRF/Ns5tI9TNMNlhWtmPKKHCU0SilX+3MJkZ0zERYYGIVBYHIA=="
+    },
     "deep-object-diff@1.1.9": {
       "integrity": "sha512-Rn+RuwkmkDwCi2/oXOFS9Gsr5lJZu/yTGpK7wAaAIE75CC+LCGEZHpY6VQJa/RoJcrmaA/docWJZvYohlNkWPA=="
     },
@@ -32,8 +35,11 @@
     "hono@4.7.4": {
       "integrity": "sha512-Pst8FuGqz3L7tFF+u9Pu70eI0xa5S3LPUmrNd5Jm8nTHze9FxLTK9Kaj5g/k4UcwuJSXTP65SyHOPLrffpcAJg=="
     },
-    "neverthrow@6.1.0": {
-      "integrity": "sha512-xNbNjp/6M5vUV+mststgneJN9eJeJCDSYSBTaf3vxgvcKooP+8L0ATFpM8DGfmH7UWKJeoa24Qi33tBP9Ya3zA=="
+    "neverthrow@8.2.0": {
+      "integrity": "sha512-kOCT/1MCPAxY5iUV3wytNFUMUolzuwd/VF/1KCx7kf6CutrOsTie+84zTGTpgQycjvfLdBBdvBvFLqFD2c0wkQ==",
+      "dependencies": [
+        "@rollup/rollup-linux-x64-gnu"
+      ]
     },
     "ts-results@3.3.0": {
       "integrity": "sha512-FWqxGX2NHp5oCyaMd96o2y2uMQmSu8Dey6kvyuFdRJ2AzfmWo3kWa4UsPlCGlfQ/qu03m09ZZtppMoY8EMHuiA=="
@@ -207,7 +213,7 @@
       "npm:@hono/zod-validator@0.4.3",
       "npm:deep-object-diff@1.1.9",
       "npm:generate-unique-id@2.0.3",
-      "npm:neverthrow@6.1.0",
+      "npm:neverthrow@8.2.0",
       "npm:ulid@2.3.0",
       "npm:zod@3.24.2"
     ]
