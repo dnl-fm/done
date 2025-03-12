@@ -1,6 +1,5 @@
 import { Context, Hono } from 'hono';
 import { z } from 'zod';
-
 import { VERSION } from '../main.ts';
 import { MESSAGE_STATUS, MessagePayload, MessageReceivedData } from '../stores/message-model.ts';
 import { MESSAGES_STORE_NAME, MessagesStore } from '../stores/messages-store.ts';
@@ -16,11 +15,11 @@ export const messageRoutes = (router: Hono, kv: Deno.Kv) => {
     const id = ctx.req.param('id');
     const result = await store.fetch(id);
 
-    if (result.err) {
-      return ctx.json({ error: result.err }, 404);
+    if (result.isErr()) {
+      return ctx.json({ error: result.error }, 404);
     }
 
-    return ctx.json(result.val);
+    return ctx.json(result.value);
   });
 
   baseRouter.get('/by-status/:status', async (ctx: Context) => {
@@ -34,11 +33,11 @@ export const messageRoutes = (router: Hono, kv: Deno.Kv) => {
 
     const result = await store.fetchByStatus(validate.data.status);
 
-    if (result.err) {
-      return ctx.json({ error: result.err }, 404);
+    if (result.isErr()) {
+      return ctx.json({ error: result.error }, 404);
     }
 
-    return ctx.json(result.val);
+    return ctx.json(result.value);
   });
 
   baseRouter.post('/:url{.*?}', async (ctx: Context) => {

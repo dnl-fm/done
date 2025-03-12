@@ -1,5 +1,4 @@
 import { diff } from 'deep-object-diff';
-
 import { Security } from './security.ts';
 
 export type HasDates = {

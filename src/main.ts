@@ -1,6 +1,5 @@
-import { bearerAuth } from 'bearerAuth';
 import { Hono } from 'hono';
-
+import { bearerAuth } from 'hono/bearer-auth';
 import { MessageStateManager } from './managers/message-state-manager.ts';
 import { adminRoutes } from './routes/admin-routes.ts';
 import { messageRoutes } from './routes/message-routes.ts';
@@ -22,10 +21,11 @@ Deno.cron('enqueue todays messages', '0 0 * * *', async () => {
   console.log(`[${new Date().toISOString()}] cron: check for todays messages`);
 
   const store = new MessagesStore(kv);
-  const messages = await store.fetchByDate(new Date());
+  const messagesResult = await store.fetchByDate(new Date());
 
-  if (messages.ok) {
-    for (const message of messages.val) {
+  if (messagesResult.isOk()) {
+    const messages = messagesResult.value;
+    for (const message of messages) {
       if (message.status === MESSAGE_STATUS.CREATED) {
         console.debug(`[${new Date().toISOString()}] cron: deliver message ${message.id}`);
         await store.update(message.id, { status: MESSAGE_STATUS.QUEUED });
