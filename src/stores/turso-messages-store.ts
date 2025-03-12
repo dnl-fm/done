@@ -24,33 +24,40 @@ export class TursoMessagesStore implements MessagesStoreInterface {
     return `${this.getModelIdPrefix().toLowerCase()}_${this.buildModelId()}`;
   }
 
-  async create(message: MessageModel): Promise<Result<MessageModel, string>> {
+  async create(
+    data: MessageData,
+    options?: { withId?: string },
+  ): Promise<Result<MessageModel, string>> {
     try {
       const now = new Date();
+      const id = options?.withId || this.buildModelIdWithPrefix();
+      const message: MessageModel = {
+        id,
+        ...data,
+        created_at: now,
+        updated_at: now,
+      };
+
       const result = await this.sqlite.execute({
         sql: `INSERT INTO messages (
           id, payload, publish_at, delivered_at, retry_at, retried, status, last_errors, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [
-          message.id,
-          JSON.stringify(message.payload),
-          message.publish_at.toISOString(),
-          message.delivered_at?.toISOString() || null,
-          message.retry_at?.toISOString() || null,
-          message.retried || 0,
-          message.status,
-          message.last_errors ? JSON.stringify(message.last_errors) : null,
-          now.toISOString(),
-          now.toISOString(),
-        ],
+        ) VALUES (:id, :payload, :publish_at, :delivered_at, :retry_at, :retried, :status, :last_errors, :created_at, :updated_at)`,
+        args: {
+          id: message.id,
+          payload: JSON.stringify(message.payload),
+          publish_at: message.publish_at.toISOString(),
+          delivered_at: message.delivered_at?.toISOString() || null,
+          retry_at: message.retry_at?.toISOString() || null,
+          retried: message.retried || 0,
+          status: message.status,
+          last_errors: message.last_errors ? JSON.stringify(message.last_errors) : null,
+          created_at: message.created_at.toISOString(),
+          updated_at: message.updated_at.toISOString(),
+        },
       });
 
       if (result.rowsAffected === 1) {
-        return ok({
-          ...message,
-          created_at: now,
-          updated_at: now,
-        });
+        return ok(message);
       }
 
       return err('Failed to create message');
@@ -62,8 +69,8 @@ export class TursoMessagesStore implements MessagesStoreInterface {
   async fetch(id: string): Promise<Result<MessageModel, string>> {
     try {
       const result = await this.sqlite.execute({
-        sql: 'SELECT * FROM messages WHERE id = ?',
-        args: [id],
+        sql: 'SELECT * FROM messages WHERE id = :id',
+        args: { id },
       });
 
       if (result.rows.length === 0) {
@@ -79,8 +86,8 @@ export class TursoMessagesStore implements MessagesStoreInterface {
   async fetchByStatus(status: MESSAGE_STATUS): Promise<Result<MessageModel[], string>> {
     try {
       const result = await this.sqlite.execute({
-        sql: 'SELECT * FROM messages WHERE status = ? ORDER BY created_at DESC',
-        args: [status],
+        sql: 'SELECT * FROM messages WHERE status = :status ORDER BY created_at DESC',
+        args: { status },
       });
 
       return ok(result.rows.map((row) => this.rowToModel(row)));
@@ -93,8 +100,8 @@ export class TursoMessagesStore implements MessagesStoreInterface {
     try {
       const dateOnly = Dates.getDateOnly(date);
       const result = await this.sqlite.execute({
-        sql: 'SELECT * FROM messages WHERE date(publish_at) = date(?) ORDER BY publish_at ASC',
-        args: [dateOnly],
+        sql: 'SELECT * FROM messages WHERE date(publish_at) = date(:date) ORDER BY publish_at ASC',
+        args: { date: dateOnly },
       });
 
       return ok(result.rows.map((row) => this.rowToModel(row)));
@@ -103,50 +110,47 @@ export class TursoMessagesStore implements MessagesStoreInterface {
     }
   }
 
-  async update(id: string, data: Partial<MessageData>): Promise<Result<MessageModel, string>> {
+  async update(id: string, data: Partial<MessageData & { updated_at?: Date }>): Promise<Result<MessageModel, string>> {
     try {
       const setClauses: string[] = [];
-      const args: (string | number | null)[] = [];
+      const args: Record<string, string | number | null> = { id };
 
       // Build dynamic SET clause
       if (data.payload) {
-        setClauses.push('payload = ?');
-        args.push(JSON.stringify(data.payload));
+        setClauses.push('payload = :payload');
+        args.payload = JSON.stringify(data.payload);
       }
       if (data.publish_at) {
-        setClauses.push('publish_at = ?');
-        args.push(data.publish_at.toISOString());
+        setClauses.push('publish_at = :publish_at');
+        args.publish_at = data.publish_at.toISOString();
       }
       if (data.delivered_at) {
-        setClauses.push('delivered_at = ?');
-        args.push(data.delivered_at.toISOString());
+        setClauses.push('delivered_at = :delivered_at');
+        args.delivered_at = data.delivered_at.toISOString();
       }
       if (data.retry_at) {
-        setClauses.push('retry_at = ?');
-        args.push(data.retry_at.toISOString());
+        setClauses.push('retry_at = :retry_at');
+        args.retry_at = data.retry_at.toISOString();
       }
       if (typeof data.retried === 'number') {
-        setClauses.push('retried = ?');
-        args.push(data.retried);
+        setClauses.push('retried = :retried');
+        args.retried = data.retried;
       }
       if (data.status) {
-        setClauses.push('status = ?');
-        args.push(data.status);
+        setClauses.push('status = :status');
+        args.status = data.status;
       }
       if (data.last_errors) {
-        setClauses.push('last_errors = ?');
-        args.push(JSON.stringify(data.last_errors));
+        setClauses.push('last_errors = :last_errors');
+        args.last_errors = JSON.stringify(data.last_errors);
       }
 
       // Add updated_at
-      setClauses.push('updated_at = ?');
-      args.push(new Date().toISOString());
-
-      // Add WHERE clause argument
-      args.push(id);
+      setClauses.push('updated_at = :updated_at');
+      args.updated_at = (data.updated_at || new Date()).toISOString();
 
       const result = await this.sqlite.execute({
-        sql: `UPDATE messages SET ${setClauses.join(', ')} WHERE id = ?`,
+        sql: `UPDATE messages SET ${setClauses.join(', ')} WHERE id = :id`,
         args,
       });
 
@@ -163,8 +167,8 @@ export class TursoMessagesStore implements MessagesStoreInterface {
   async delete(id: string): Promise<Result<boolean, string>> {
     try {
       const result = await this.sqlite.execute({
-        sql: 'DELETE FROM messages WHERE id = ?',
-        args: [id],
+        sql: 'DELETE FROM messages WHERE id = :id',
+        args: { id },
       });
 
       return ok(result.rowsAffected > 0);
