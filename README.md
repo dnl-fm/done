@@ -34,10 +34,34 @@ Done isn't just another message queue service; it's a celebration of simplicity 
 Embrace the open-source simplicity with Done. Queue up, have fun, and get it done! 
 
 - 📡 RESTful API, Joyful You: Manage your queues with a RESTful API that's as simple as a light switch – on, off, and awesome.
-- 🧰 No-Frills, All Thrills: We’ve cut the fluff, leaving you with a lean, mean, message-queuing machine.
+- 🧰 No-Frills, All Thrills: We've cut the fluff, leaving you with a lean, mean, message-queuing machine.
 - 🦕 Deno-Deploy-Powered: With its foundation in Deno, Done is as awesome as a dinosaur rocking shades. That's right, we're keeping it that cool ;)
 
 ## Features
+
+### Storage Options
+
+Done supports two storage backends:
+
+1. **Deno KV (Default)**: Uses Deno's built-in key-value store for all data storage.
+2. **Turso**: Stores data in SQLite (locally for development) or Turso's distributed SQLite service (for production).
+
+Each storage backend is optimized with a specialized implementation:
+- **KV Storage**: Uses a key-value model with secondary indexes for efficient lookups.
+- **Turso Storage**: Leverages SQL's native query capabilities for efficient data retrieval and manipulation.
+
+To configure the storage backend, set the following environment variables:
+
+```
+# Choose storage type: 'kv' or 'turso'
+STORAGE_TYPE=kv
+
+# For Turso storage
+TURSO_DB_URL=https://your-db.turso.io  # Optional: defaults to local SQLite file if not provided
+TURSO_AUTH_TOKEN=your-auth-token       # Optional: only needed for Turso cloud
+```
+
+For local development with Turso, you can use an in-memory database by setting `TURSO_DB_URL=:memory:` or a local file with `TURSO_DB_URL=file:turso.db`.
 
 ### Absolute Delay
 

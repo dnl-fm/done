@@ -1,95 +1,107 @@
-import { Context, Hono } from 'hono';
-import { VERSION } from '../main.ts';
+import { Context } from 'hono';
+import { KVStore } from '../services/storage/kv-store.ts';
+import { StorageInterface } from '../services/storage/storage-interface.ts';
 import { MessageModel } from '../stores/message-model.ts';
-import { Store } from '../utils/store.ts';
+import { Routes } from '../utils/routes.ts';
 
-export const adminRoutes = (router: Hono, kv: Deno.Kv) => {
-  const baseRouter = router.basePath(`/${VERSION}/admin`);
+export class AdminRoutes {
+  private basePath = `/admin`;
+  private routes = Routes.initHono({ basePath: this.basePath });
 
-  baseRouter.get(`/stats`, async (ctx: Context) => {
-    const stats: Record<string, number> = {};
-    const entries = kv.list<MessageModel[]>({ prefix: [] });
+  constructor(private readonly kv: Deno.Kv) {}
 
-    for await (const entry of entries) {
-      const isSecondary = entry.key[2] === 'secondaries';
-      const statsKey = entry.key.slice(1, isSecondary ? 5 : 2).join('/');
-
-      if (isSecondary) {
-        stats[statsKey] = entry.value.length;
-        continue;
-      }
-
-      if (!stats[statsKey]) {
-        stats[statsKey] = 0;
-      }
-
-      stats[statsKey]++;
-    }
-
-    return ctx.json({ stats });
-  });
-
-  async function kvFilterHandler(match?: string) {
-    const data: unknown[] = [];
-    const entries = kv.list({ prefix: [] });
-
-    for await (const entry of entries) {
-      const key = Array.from(entry.key);
-      const keyPath = key.join('/');
-
-      // if match is provided, only show entries that match the path
-      if (match && keyPath.indexOf(match) === -1) {
-        continue;
-      }
-
-      data.push({ key: keyPath, value: entry.value });
-    }
-
-    return data;
+  getBasePath(version: string) {
+    return `/${version}/${this.basePath.replace('/', '')}`;
   }
 
-  baseRouter.get(`/raw/:match?`, async (ctx: Context) => {
-    return ctx.json(await kvFilterHandler(ctx.req.param('match')));
-  });
+  getRoutes() {
+    this.routes.get('/stats', async (c: Context) => {
+      const stats: Record<string, number> = {};
+      const entries = this.kv.list<MessageModel[]>({ prefix: [] });
 
-  baseRouter.get(`/logs`, async (ctx: Context) => {
-    const data = await kvFilterHandler('stores/logging/log_');
-    return ctx.json(data.reverse());
-  });
+      for await (const entry of entries) {
+        const isSecondary = entry.key[2] === 'secondaries';
+        const statsKey = entry.key.slice(1, isSecondary ? 5 : 2).join('/');
 
-  baseRouter.get(`/log/:messageId`, async (ctx: Context) => {
-    const messageId = ctx.req.param('messageId');
-    const values = await kv.get<string[]>(Store.buildLogSecondaryKey(messageId));
+        if (isSecondary) {
+          stats[statsKey] = entry.value.length;
+          continue;
+        }
 
-    if (!values.value) {
-      return ctx.json([]);
-    }
+        if (!stats[statsKey]) {
+          stats[statsKey] = 0;
+        }
 
-    const data: unknown[] = [];
-
-    for (const logId of values.value) {
-      const value = await kv.get(Store.buildLogKey(logId));
-      data.push(value.value);
-    }
-
-    return ctx.json(data.reverse());
-  });
-
-  baseRouter.delete(`/reset/:match?`, async (ctx: Context) => {
-    const match = ctx.req.param('match');
-    const entries = kv.list({ prefix: [] });
-
-    for await (const entry of entries) {
-      const keyPath = Array.from(entry.key).join('/');
-
-      // if match is provided, only delete entries that match the path
-      if (match && keyPath.indexOf(`stores/${match}`) === -1) {
-        continue;
+        stats[statsKey]++;
       }
 
-      await kv.delete(entry.key);
+      return c.json({ stats });
+    });
+
+    async function storageFilterHandler(storage: StorageInterface, match?: string) {
+      const data: unknown[] = [];
+      const entries = storage.list({ prefix: [] });
+
+      for await (const entry of entries) {
+        const key = Array.from(entry.key);
+        const keyPath = key.join('/');
+
+        // if match is provided, only show entries that match the path
+        if (match && keyPath.indexOf(match) === -1) {
+          continue;
+        }
+
+        data.push({ key: keyPath, value: entry.value });
+      }
+
+      return data;
     }
 
-    return ctx.json({ message: 'fresh as new!', match });
-  });
-};
+    this.routes.get('/raw/:match?', async (c: Context) => {
+      return c.json(await storageFilterHandler(this.kv, c.req.param('match')));
+    });
+
+    this.routes.get('/logs', async (c: Context) => {
+      const data = await storageFilterHandler(this.kv, 'stores/logging/log_');
+      return c.json(data.reverse());
+    });
+
+    this.routes.get('/log/:messageId', async (c: Context) => {
+      const messageId = c.req.param('messageId');
+      const values = await this.kv.getSecondary<string[]>(KVStore.buildLogSecondaryKey(messageId));
+
+      if (!values.value) {
+        return c.json([]);
+      }
+
+      const data: unknown[] = [];
+
+      for (const logId of values.value) {
+        const value = await this.kv.get(KVStore.buildLogKey(logId));
+        data.push(value.value);
+      }
+
+      return c.json(data.reverse());
+    });
+
+    this.routes.delete('/reset/:match?', async (c: Context) => {
+      const match = c.req.param('match');
+      const entries = this.kv.list({ prefix: [] });
+
+      for await (const entry of entries) {
+        const keyPath = Array.from(entry.key).join('/');
+
+        // if match is provided, only delete entries that match the path
+        if (match && keyPath.indexOf(`stores/${match}`) === -1) {
+          continue;
+        }
+
+        await this.kv.delete(entry.key);
+      }
+
+      return c.json({ message: 'fresh as new!', match });
+    });
+
+    return this.routes;
+  }
+}

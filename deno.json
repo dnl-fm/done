@@ -6,11 +6,16 @@
     "result": "npm:neverthrow@8.2.0",
     "ulid": "npm:ulid@2.3.0",
     "generate-unique-id": "npm:generate-unique-id@2.0.3",
-    "deep-object-diff": "npm:deep-object-diff@1.1.9"
+    "deep-object-diff": "npm:deep-object-diff@1.1.9",
+    "@libsql/client": "npm:@libsql/client@0.14.0",
+    "libsql-core": "npm:@libsql/core@0.14.0/api",
+    "libsql-node": "npm:@libsql/client@0.14.0/node",
+    "libsql-web": "npm:@libsql/client@0.14.0/web"
   },
   "tasks": {
     "dev": "deno run -A --env=.env.local --watch --unstable-kv --unstable-cron src/main.ts",
-    "clean": "deno fmt -q && deno lint ./src"
+    "clean": "deno fmt -q && deno lint ./src",
+    "test": "deno test -A --unstable-kv tests/"
   },
   "lint": {
     "include": [

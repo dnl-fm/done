@@ -1,6 +1,5 @@
 import { diff } from 'deep-object-diff';
-
-import { Security } from './security.ts';
+import { Security } from '../../utils/security.ts';
 
 export type HasDates = {
   createdAt: Date;
@@ -46,7 +45,7 @@ export type Secondary = {
   value?: string[];
 };
 
-export abstract class AbstractKvStore {
+export abstract class KvStore {
   constructor(protected kv: Deno.Kv) {}
 
   abstract getStoreName(): string;
@@ -57,11 +56,11 @@ export abstract class AbstractKvStore {
   }
 
   static buildLogKey(logId: string) {
-    return [...AbstractKvStore.getStoresBaseKey(), 'logging', logId];
+    return [...KvStore.getStoresBaseKey(), 'logging', logId];
   }
 
   static buildLogSecondaryKey(messageId: string) {
-    return [...AbstractKvStore.getStoresBaseKey(), 'logging', 'secondaries', 'BY_MESSAGE_ID', messageId];
+    return [...KvStore.getStoresBaseKey(), 'logging', 'secondaries', 'BY_MESSAGE_ID', messageId];
   }
 
   static getStoresBaseKey() {
@@ -69,7 +68,7 @@ export abstract class AbstractKvStore {
   }
 
   static getCollectionBaseSecondaryKey() {
-    return [...AbstractKvStore.getStoresBaseKey(), 'secondary'];
+    return [...KvStore.getStoresBaseKey(), 'secondary'];
   }
 
   buildModelId() {
@@ -211,7 +210,7 @@ export abstract class AbstractKvStore {
   }
 
   protected buildPrimaryKey(id?: string) {
-    const keys = [...AbstractKvStore.getStoresBaseKey(), this.getStoreName()];
+    const keys = [...KvStore.getStoresBaseKey(), this.getStoreName()];
 
     if (id) {
       keys.push(id);
@@ -283,7 +282,7 @@ export abstract class AbstractKvStore {
   }
 
   private async triggerWriteEvent(type: SYSTEM_MESSAGE_TYPE, data: { before?: unknown; after?: unknown }) {
-    const log: SystemMessage = { type, data, id: AbstractKvStore.buildLogId(), object: this.getStoreName(), createdAt: new Date() };
+    const log: SystemMessage = { type, data, id: KvStore.buildLogId(), object: this.getStoreName(), createdAt: new Date() };
 
     // ##############################################
     // enqueue message
@@ -310,10 +309,10 @@ export abstract class AbstractKvStore {
     }
 
     // save log
-    await this.kv.set(AbstractKvStore.buildLogKey(log.id), log);
+    await this.kv.set(KvStore.buildLogKey(log.id), log);
 
     // add secondary to lookup logs by message id
-    const secondaryKey = AbstractKvStore.buildLogSecondaryKey(messageId);
+    const secondaryKey = KvStore.buildLogSecondaryKey(messageId);
     const values = await this.kv.get<string[]>(secondaryKey);
     await this.kv.set(secondaryKey, Array.isArray(values.value) ? [...values.value, log.id] : [log.id]);
   }

@@ -1,13 +1,14 @@
-import { MESSAGE_STATUS, MessageModel, MessageReceivedData } from '../stores/message-model.ts';
-import { MessagesStore } from '../stores/messages-store.ts';
+import { KvStore, SYSTEM_MESSAGE_TYPE, SystemMessage } from '../services/storage/kv-store.ts';
+import { MessageModel, MessageReceivedData } from '../stores/kv-message-model.ts';
+import { KvMessagesStore } from '../stores/kv-messages-store.ts';
+import { MessagesStoreInterface } from '../stores/messages-store-interface.ts';
 import { Dates } from '../utils/dates.ts';
 import { Http } from '../utils/http.ts';
-import { Store, SYSTEM_MESSAGE_TYPE, SystemMessage } from '../utils/store.ts';
 
 const RETRY_DELAY_MINUTES = 1;
 
 export class MessageStateManager {
-  constructor(private kv: Deno.Kv) {}
+  constructor(private kv: Deno.Kv, private messageStore: MessagesStoreInterface) {}
 
   async handleState(message: SystemMessage) {
     const model = this.getModelFromMessage<MessageModel>(message);
@@ -19,29 +20,29 @@ export class MessageStateManager {
         return;
       case SYSTEM_MESSAGE_TYPE.MESSAGE_QUEUED:
       case SYSTEM_MESSAGE_TYPE.MESSAGE_RETRY:
-        await this.getStore().update(model.id, { status: MESSAGE_STATUS.DELIVER });
+        await this.getStore().update(model.id, { status: 'DELIVER' });
         return;
       default:
     }
 
     // handle model state
     switch (model.status) {
-      case MESSAGE_STATUS.CREATED:
+      case 'CREATED':
         await this.stateCreated(model);
         break;
-      case MESSAGE_STATUS.QUEUED:
+      case 'QUEUED':
         await this.stateQueued(model);
         break;
-      case MESSAGE_STATUS.DELIVER:
+      case 'DELIVER':
         await this.stateDeliver(model);
         break;
-      case MESSAGE_STATUS.SENT:
+      case 'SENT':
         await this.stateSent(model);
         break;
-      case MESSAGE_STATUS.RETRY:
+      case 'RETRY':
         await this.stateRetry(model);
         break;
-      case MESSAGE_STATUS.DLQ:
+      case 'DLQ':
         await this.stateDLQ(model);
         break;
       default:
@@ -52,26 +53,26 @@ export class MessageStateManager {
     const today = new Date();
 
     // send now
-    if (model.publishAt.getTime() < today.getTime()) {
-      await this.getStore().update(model.id, { status: MESSAGE_STATUS.DELIVER });
+    if (model.publish_at.getTime() < today.getTime()) {
+      await this.getStore().update(model.id, { status: 'DELIVER' });
       return;
     }
 
     const todayDateOnly = Dates.getDateOnly(today);
-    const publishAtDateOnly = Dates.getDateOnly(model.publishAt);
+    const publishAtDateOnly = Dates.getDateOnly(model.publish_at);
 
     // queue for later
     if (todayDateOnly === publishAtDateOnly) {
-      await this.getStore().update(model.id, { status: MESSAGE_STATUS.QUEUED });
+      await this.getStore().update(model.id, { status: 'QUEUED' });
     }
   }
 
   private async stateQueued(model: MessageModel) {
     const today = new Date();
-    const delay = model.publishAt.getTime() - today.getTime();
+    const delay = model.publish_at.getTime() - today.getTime();
 
     const message: SystemMessage = {
-      id: Store.buildLogId(),
+      id: KvStore.buildLogId(),
       type: SYSTEM_MESSAGE_TYPE.MESSAGE_QUEUED,
       object: this.getStore().getStoreName(),
       data: model,
@@ -84,10 +85,10 @@ export class MessageStateManager {
   private async stateRetry(model: MessageModel) {
     console.debug(`[${new Date().toISOString()}] retry message ${model.id}`);
 
-    const delay = model.retryAt ? model.retryAt.getTime() - new Date().getTime() : 0; // retryAt or immediately
+    const delay = model.retry_at ? model.retry_at.getTime() - new Date().getTime() : 0; // retryAt or immediately
 
     const message: SystemMessage = {
-      id: Store.buildLogId(),
+      id: KvStore.buildLogId(),
       type: SYSTEM_MESSAGE_TYPE.MESSAGE_RETRY,
       object: this.getStore().getStoreName(),
       data: model,
@@ -114,25 +115,25 @@ export class MessageStateManager {
       const response = await fetch(model.payload.url, options);
 
       if (response.status === 200 || response.status === 201) {
-        await this.getStore().update(model.id, { deliveredAt: new Date(), status: MESSAGE_STATUS.SENT });
+        await this.getStore().update(model.id, { delivered_at: new Date(), status: 'SENT' });
         return;
       }
 
       responseStatus = response.status;
       lastDeliveryErrorMessage = 'invalid response status';
-    } catch (error: unknown) {
-      lastDeliveryErrorMessage = error instanceof Error ? error.message : String(error);
+    } catch (error) {
+      lastDeliveryErrorMessage = error instanceof Error ? error.message : 'unknown error';
     }
 
-    if (!model.lastErrors) {
-      model.lastErrors = [];
+    if (!model.last_errors) {
+      model.last_errors = [];
     }
 
-    model.lastErrors.push({
+    model.last_errors.push({
       url: model.payload.url,
       status: responseStatus,
       message: lastDeliveryErrorMessage,
-      createdAt: new Date(),
+      created_at: new Date(),
     });
 
     // retry
@@ -140,21 +141,21 @@ export class MessageStateManager {
       const delay = 1000 * 60 * RETRY_DELAY_MINUTES;
 
       await this.getStore().update(model.id, {
-        lastErrors: model.lastErrors,
+        last_errors: model.last_errors,
         retried: model.retried + 1,
-        retryAt: new Date(new Date().getTime() + delay),
-        status: MESSAGE_STATUS.RETRY,
+        retry_at: new Date(new Date().getTime() + delay),
+        status: 'RETRY',
       });
 
       return;
     }
 
     // send to DLQ
-    await this.getStore().update(model.id, { lastErrors: model.lastErrors, status: MESSAGE_STATUS.DLQ });
+    await this.getStore().update(model.id, { last_errors: model.last_errors, status: 'DLQ' });
   }
 
   private stateSent(model: MessageModel) {
-    console.debug(`[${new Date().toISOString()}] sent message ${model.id} to ${model.payload.url} at ${model.deliveredAt?.toISOString()}`);
+    console.debug(`[${new Date().toISOString()}] sent message ${model.id} to ${model.payload.url} at ${model.delivered_at?.toISOString()}`);
   }
 
   private async stateDLQ(model: MessageModel) {
@@ -199,6 +200,6 @@ export class MessageStateManager {
   }
 
   private getStore() {
-    return new MessagesStore(this.kv);
+    return new KvMessagesStore(this.kv);
   }
 }
