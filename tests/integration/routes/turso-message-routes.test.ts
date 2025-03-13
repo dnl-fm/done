@@ -1,17 +1,17 @@
-import { assertEquals, assertExists } from 'jsr:@std/assert';
+import { assert, assertEquals, assertExists } from 'jsr:@std/assert';
 import { afterEach, beforeEach, describe, it } from 'jsr:@std/testing/bdd';
 import { Client } from 'libsql-core';
 import { z } from 'zod';
-import { MessageRoutes } from '../../src/routes/message-routes.ts';
-import { MessageReceivedResponseSchema, MessageSchema } from '../../src/schemas/message-schema.ts';
-import { SqliteStore } from '../../src/services/storage/sqlite-store.ts';
-import { KvStore } from '../../src/stores/kv-store.ts';
-import { TursoMessagesStore } from '../../src/stores/turso-messages-store.ts';
-import { Migrations } from '../../src/utils/migrations.ts';
-import { Routes } from '../../src/utils/routes.ts';
-import { VERSION_STRING } from '../../src/version.ts';
+import { MessageRoutes } from '../../../src/routes/message-routes.ts';
+import { MessageReceivedResponseSchema, MessageResponseSchema, MessageSchema } from '../../../src/schemas/message-schema.ts';
+import { SqliteStore } from '../../../src/services/storage/sqlite-store.ts';
+import { KvStore } from '../../../src/stores/kv-store.ts';
+import { TursoMessagesStore } from '../../../src/stores/turso-messages-store.ts';
+import { Migrations } from '../../../src/utils/migrations.ts';
+import { Routes } from '../../../src/utils/routes.ts';
+import { VERSION_STRING } from '../../../src/version.ts';
 
-describe('MessageRoutes', () => {
+describe('TursoMessageRoutes integration tests', () => {
   let kv: Deno.Kv;
   let client: Client;
   let sqliteStore: SqliteStore;
@@ -20,13 +20,11 @@ describe('MessageRoutes', () => {
   let app: ReturnType<typeof Routes.initHono>;
 
   beforeEach(async () => {
-    // Setup KV store
     kv = await Deno.openKv();
-
-    // Setup SQLite store
     sqliteStore = new SqliteStore({ url: ':memory:' });
-    await new Migrations(sqliteStore).migrate({ force: true });
     client = await sqliteStore.getClient();
+
+    await new Migrations(sqliteStore).migrate({ force: true });
     messageStore = new TursoMessagesStore(client);
 
     // Setup routes
@@ -38,6 +36,58 @@ describe('MessageRoutes', () => {
   afterEach(async () => {
     await new KvStore(kv).reset();
     kv.close();
+  });
+
+  describe('POST /:url', () => {
+    it('should create a new message', async () => {
+      const payload = { test: true };
+      const req = new Request(`http://localhost/${VERSION_STRING}/messages/https://example.com/callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const res = await app.fetch(req);
+      assertEquals(res.status, 201);
+
+      const body = await res.json();
+      const validate = MessageReceivedResponseSchema.safeParse(body);
+      assertEquals(validate.success, true, `Invalid response body: ${JSON.stringify(body)}`);
+      assertExists(validate.data);
+      assertExists(validate.data.id);
+      assertExists(validate.data.publish_at);
+      assertEquals(validate.data.id.startsWith('msg_'), true);
+    });
+
+    it('should create a new message with delayed publish date', async () => {
+      const payload = { test: true };
+      const req = new Request(`http://localhost/${VERSION_STRING}/messages/https://example.com/callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Done-Delay': '5s',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const res = await app.fetch(req);
+      assertEquals(res.status, 201);
+
+      const body = await res.json();
+      const validate = MessageReceivedResponseSchema.safeParse(body);
+      assertEquals(validate.success, true, `Invalid response body: ${JSON.stringify(body)}`);
+      assertExists(validate.data);
+      assertExists(validate.data.id);
+      assertExists(validate.data.publish_at);
+      assertEquals(validate.data.id.startsWith('msg_'), true);
+
+      // Verify the publish date is in the future
+      const publishAt = new Date(validate.data.publish_at);
+      const now = new Date();
+      assertEquals(publishAt > now, true);
+    });
   });
 
   describe('GET /:id', () => {
@@ -66,12 +116,12 @@ describe('MessageRoutes', () => {
       assertEquals(res.status, 200);
 
       const body = await res.json();
-      const validate = MessageSchema.safeParse(body);
+      const validate = MessageResponseSchema.safeParse(body);
 
-      assertEquals(validate.success, true, `Invalid response body: ${JSON.stringify(body)}`);
+      assert(validate.success, `Invalid response body: ${JSON.stringify(body)}`);
       assertExists(validate.data, `Missing message data`);
-      assertEquals(validate.data.id, message.id);
-      assertEquals(validate.data.status, message.status);
+      assertEquals(validate.data.id, message.id, `Invalid message id: ${validate.data.id}`);
+      assertEquals(validate.data.status, message.status, `Invalid message status: ${validate.data.status}`);
     });
 
     it('should return 404 for non-existent message', async () => {
@@ -123,67 +173,19 @@ describe('MessageRoutes', () => {
       assertEquals(res.status, 200);
 
       const body = await res.json();
-      const validate = z.array(MessageSchema).safeParse(body);
+      const validate = z.array(MessageResponseSchema).safeParse(body);
 
       assertEquals(validate.success, true, `Invalid response body: ${JSON.stringify(body)}`);
       assertExists(validate.data, `Missing message data`);
-      assertEquals(validate.data.length, 2);
-      assertEquals(validate.data[0].status, 'QUEUED');
-      assertEquals(validate.data[1].status, 'QUEUED');
+      assertEquals(validate.data.length, 2, `Invalid number of messages: ${validate.data.length}`);
+      assertEquals(validate.data[0].status, 'QUEUED', `Invalid message status: ${validate.data[0].status}`);
+      assertEquals(validate.data[1].status, 'QUEUED', `Invalid message status: ${validate.data[1].status}`);
     });
 
     it('should return 400 for invalid status', async () => {
       const req = new Request(`http://localhost/${VERSION_STRING}/messages/by-status/invalid`);
       const res = await app.fetch(req);
       assertEquals(res.status, 400);
-    });
-  });
-
-  describe('POST /:url', () => {
-    it('should create a new message', async () => {
-      const payload = { test: true };
-      const req = new Request(`http://localhost/${VERSION_STRING}/messages/https://example.com/callback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const res = await app.fetch(req);
-      assertEquals(res.status, 201);
-
-      const body = await res.json();
-      const validate = MessageReceivedResponseSchema.safeParse(body);
-      assertEquals(validate.success, true, `Invalid response body: ${JSON.stringify(body)}`);
-      assertExists(validate.data);
-      assertExists(validate.data.id);
-      assertExists(validate.data.publish_at);
-      assertEquals(validate.data.id.startsWith('msg_'), true);
-    });
-
-    it('should create a new message with delayed publish date', async () => {
-      const payload = { test: true };
-      const req = new Request(`http://localhost/${VERSION_STRING}/messages/https://example.com/callback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Done-Delay': '5s',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const res = await app.fetch(req);
-      assertEquals(res.status, 201);
-
-      const body = await res.json();
-      assertExists(body.id);
-      assertExists(body.publishAt);
-
-      // Verify the publish date is in the future
-      const publishAt = new Date(body.publishAt);
-      const now = new Date();
-      assertEquals(publishAt > now, true);
     });
   });
 });

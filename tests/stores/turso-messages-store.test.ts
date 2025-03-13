@@ -1,5 +1,5 @@
 import { assertEquals, assertExists } from 'jsr:@std/assert';
-import { afterEach, beforeEach, describe, it } from 'jsr:@std/testing/bdd';
+import { beforeEach, describe, it } from 'jsr:@std/testing/bdd';
 import { Client } from 'libsql-core';
 import { SqliteStore } from '../../src/services/storage/sqlite-store.ts';
 import { MESSAGE_STATUS, MessageModel } from '../../src/stores/kv-message-model.ts';
@@ -7,21 +7,17 @@ import { TursoMessagesStore } from '../../src/stores/turso-messages-store.ts';
 import { Dates } from '../../src/utils/dates.ts';
 import { Migrations } from '../../src/utils/migrations.ts';
 
-describe('TursoMessagesStore', () => {
+describe('TursoMessagesStore integration tests', () => {
   let client: Client;
   let store: TursoMessagesStore;
   let sqliteStore: SqliteStore;
 
   beforeEach(async () => {
     sqliteStore = new SqliteStore({ url: ':memory:' });
-    await new Migrations(sqliteStore).migrate({ force: true });
     client = await sqliteStore.getClient();
-    store = new TursoMessagesStore(client);
-  });
 
-  afterEach(async () => {
-    await client.execute('DROP TABLE IF EXISTS messages');
-    await client.execute('DROP TABLE IF EXISTS migrations');
+    await new Migrations(sqliteStore).migrate({ force: true });
+    store = new TursoMessagesStore(client);
   });
 
   describe('create()', () => {
@@ -71,7 +67,7 @@ describe('TursoMessagesStore', () => {
       };
 
       await store.create(message);
-      const result = await store.fetch(message.id);
+      const result = await store.fetchOne(message.id);
 
       assertEquals(result.isOk(), true);
       if (result.isOk()) {
@@ -81,7 +77,7 @@ describe('TursoMessagesStore', () => {
     });
 
     it('should return error for non-existent message', async () => {
-      const result = await store.fetch('non_existent');
+      const result = await store.fetchOne('non_existent');
       assertEquals(result.isErr(), true);
     });
   });
@@ -231,7 +227,7 @@ describe('TursoMessagesStore', () => {
       const deleteResult = await store.delete(message.id);
       assertEquals(deleteResult.isOk(), true);
 
-      const fetchResult = await store.fetch(message.id);
+      const fetchResult = await store.fetchOne(message.id);
       assertEquals(fetchResult.isErr(), true);
     });
   });

@@ -34,7 +34,7 @@ export class KvMessagesStore extends AbstractKvStore implements MessagesStoreInt
     ];
   }
 
-  async fetch(id: string): Promise<Result<MessageModel, string>> {
+  async fetchOne(id: string): Promise<Result<MessageModel, string>> {
     const model = await this._fetch<MessageModel>(id);
 
     if (model === null) {

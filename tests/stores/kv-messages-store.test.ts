@@ -5,7 +5,7 @@ import { KvMessagesStore } from '../../src/stores/kv-messages-store.ts';
 import { KvStore } from '../../src/stores/kv-store.ts';
 import { Dates } from '../../src/utils/dates.ts';
 
-describe('KvMessagesStore', () => {
+describe('KvMessagesStore integration tests', () => {
   let store: KvMessagesStore;
   let kv: Deno.Kv;
 
@@ -88,7 +88,7 @@ describe('KvMessagesStore', () => {
       const createResult = await store.create(message);
       assertEquals(createResult.isOk(), true);
 
-      const result = await store.fetch(createResult.value.id);
+      const result = await store.fetchOne(createResult.value.id);
       assertEquals(result.isOk(), true);
 
       if (result.isOk()) {
@@ -98,7 +98,7 @@ describe('KvMessagesStore', () => {
     });
 
     it('should return error for non-existent message', async () => {
-      const result = await store.fetch('non_existent');
+      const result = await store.fetchOne('non_existent');
       assertEquals(result.isErr(), true);
     });
   });
@@ -240,7 +240,7 @@ describe('KvMessagesStore', () => {
       const deleteResult = await store.delete(createResult.value.id);
       assertEquals(deleteResult.isOk(), true);
 
-      const fetchResult = await store.fetch(createResult.value.id);
+      const fetchResult = await store.fetchOne(createResult.value.id);
       assertEquals(fetchResult.isErr(), true);
     });
   });

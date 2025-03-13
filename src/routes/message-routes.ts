@@ -1,7 +1,6 @@
 import { z } from 'zod';
-import { MessageReceivedDataSchema, MessageReceivedResponseSchema } from '../schemas/message-schema.ts';
+import { MessageReceivedDataSchema, MessageReceivedResponseSchema, MessageStatusSchema } from '../schemas/message-schema.ts';
 import { SYSTEM_MESSAGE_TYPE, SystemMessage } from '../services/storage/kv-store.ts';
-import { MESSAGE_STATUS } from '../stores/kv-message-model.ts';
 import { MESSAGES_STORE_NAME } from '../stores/kv-messages-store.ts';
 import { MessagesStoreInterface } from '../stores/messages-store-interface.ts';
 import { Http } from '../utils/http.ts';
@@ -24,7 +23,7 @@ export class MessageRoutes {
   getRoutes() {
     this.routes.get('/:id', async (c) => {
       const id = c.req.param('id');
-      const result = await this.messageStore.fetch(id);
+      const result = await this.messageStore.fetchOne(id);
 
       if (result.isErr()) {
         return c.json({ error: result.error }, 404);
@@ -35,16 +34,13 @@ export class MessageRoutes {
 
     this.routes.get('/by-status/:status', async (c) => {
       const status = c.req.param('status');
-      const statusZod = z.object({
-        status: z.enum(['CREATED', 'QUEUED', 'DELIVER', 'SENT', 'RETRY', 'DLQ', 'ARCHIVED']),
-      });
-      const validate = statusZod.safeParse({ status: status.toUpperCase() });
+      const validate = MessageStatusSchema.safeParse(status.toUpperCase());
 
       if (!validate.success) {
         return c.json({ error: `Unknown status ${status}` }, 400);
       }
 
-      const result = await this.messageStore.fetchByStatus(validate.data.status as MESSAGE_STATUS);
+      const result = await this.messageStore.fetchByStatus(validate.data);
 
       if (result.isErr()) {
         return c.json({ error: result.error }, 404);

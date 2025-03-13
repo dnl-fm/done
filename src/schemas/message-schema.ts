@@ -23,6 +23,7 @@ export const MessageSchema = z.object({
   id: z.string().regex(/^msg_/),
   payload: MessagePayloadSchema,
   status: MessageStatusSchema,
+  delivered_at: z.date().optional(),
   publish_at: z.date(),
   created_at: z.date(),
   updated_at: z.date(),
@@ -31,4 +32,11 @@ export const MessageSchema = z.object({
 export const MessageReceivedResponseSchema = z.object({
   id: z.string(),
   publish_at: z.string().datetime(),
+});
+
+export const MessageResponseSchema = MessageSchema.extend({
+  delivered_at: z.string().datetime().optional(),
+  publish_at: z.string().datetime(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
 });

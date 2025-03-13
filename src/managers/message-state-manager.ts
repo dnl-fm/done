@@ -1,6 +1,5 @@
 import { KvStore, SYSTEM_MESSAGE_TYPE, SystemMessage } from '../services/storage/kv-store.ts';
 import { MessageModel, MessageReceivedData } from '../stores/kv-message-model.ts';
-import { KvMessagesStore } from '../stores/kv-messages-store.ts';
 import { MessagesStoreInterface } from '../stores/messages-store-interface.ts';
 import { Dates } from '../utils/dates.ts';
 import { Http } from '../utils/http.ts';
@@ -16,11 +15,11 @@ export class MessageStateManager {
     // handle message type
     switch (message.type) {
       case SYSTEM_MESSAGE_TYPE.MESSAGE_RECEIVED:
-        await this.getStore().createFromReceivedData(message.data as MessageReceivedData);
+        await this.messageStore.createFromReceivedData(message.data as MessageReceivedData);
         return;
       case SYSTEM_MESSAGE_TYPE.MESSAGE_QUEUED:
       case SYSTEM_MESSAGE_TYPE.MESSAGE_RETRY:
-        await this.getStore().update(model.id, { status: 'DELIVER' });
+        await this.messageStore.update(model.id, { status: 'DELIVER' });
         return;
       default:
     }
@@ -54,7 +53,7 @@ export class MessageStateManager {
 
     // send now
     if (model.publish_at.getTime() < today.getTime()) {
-      await this.getStore().update(model.id, { status: 'DELIVER' });
+      await this.messageStore.update(model.id, { status: 'DELIVER' });
       return;
     }
 
@@ -63,7 +62,7 @@ export class MessageStateManager {
 
     // queue for later
     if (todayDateOnly === publishAtDateOnly) {
-      await this.getStore().update(model.id, { status: 'QUEUED' });
+      await this.messageStore.update(model.id, { status: 'QUEUED' });
     }
   }
 
@@ -74,7 +73,7 @@ export class MessageStateManager {
     const message: SystemMessage = {
       id: KvStore.buildLogId(),
       type: SYSTEM_MESSAGE_TYPE.MESSAGE_QUEUED,
-      object: this.getStore().getStoreName(),
+      object: this.messageStore.getStoreName(),
       data: model,
       created_at: new Date(),
     };
@@ -90,7 +89,7 @@ export class MessageStateManager {
     const message: SystemMessage = {
       id: KvStore.buildLogId(),
       type: SYSTEM_MESSAGE_TYPE.MESSAGE_RETRY,
-      object: this.getStore().getStoreName(),
+      object: this.messageStore.getStoreName(),
       data: model,
       created_at: new Date(),
     };
@@ -115,7 +114,7 @@ export class MessageStateManager {
       const response = await fetch(model.payload.url, options);
 
       if (response.status === 200 || response.status === 201) {
-        await this.getStore().update(model.id, { delivered_at: new Date(), status: 'SENT' });
+        await this.messageStore.update(model.id, { delivered_at: new Date(), status: 'SENT' });
         return;
       }
 
@@ -140,7 +139,7 @@ export class MessageStateManager {
     if (model.retried !== undefined && model.retried < 3) {
       const delay = 1000 * 60 * RETRY_DELAY_MINUTES;
 
-      await this.getStore().update(model.id, {
+      await this.messageStore.update(model.id, {
         last_errors: model.last_errors,
         retried: model.retried + 1,
         retry_at: new Date(new Date().getTime() + delay),
@@ -151,7 +150,7 @@ export class MessageStateManager {
     }
 
     // send to DLQ
-    await this.getStore().update(model.id, { last_errors: model.last_errors, status: 'DLQ' });
+    await this.messageStore.update(model.id, { last_errors: model.last_errors, status: 'DLQ' });
   }
 
   private stateSent(model: MessageModel) {
@@ -197,9 +196,5 @@ export class MessageStateManager {
     }
 
     return message.data as Model;
-  }
-
-  private getStore() {
-    return new KvMessagesStore(this.kv);
   }
 }

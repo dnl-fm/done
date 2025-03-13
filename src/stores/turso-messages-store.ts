@@ -2,7 +2,7 @@ import { Client, Row } from 'libsql-core';
 import { err, ok, Result } from 'result';
 import { Dates } from '../utils/dates.ts';
 import { Security } from '../utils/security.ts';
-import { MESSAGE_STATUS, MessageData, MessageModel } from './kv-message-model.ts';
+import { MESSAGE_STATUS, MessageData, MessageModel, MessageReceivedData } from './kv-message-model.ts';
 import { MessagesStoreInterface } from './messages-store-interface.ts';
 
 export class TursoMessagesStore implements MessagesStoreInterface {
@@ -22,6 +22,10 @@ export class TursoMessagesStore implements MessagesStoreInterface {
 
   buildModelIdWithPrefix(): string {
     return `${this.getModelIdPrefix().toLowerCase()}_${this.buildModelId()}`;
+  }
+
+  async createFromReceivedData(data: MessageReceivedData) {
+    return await this.create({ payload: data.payload, publish_at: data.publish_at, status: 'CREATED' }, { withId: data.id });
   }
 
   async create(
@@ -66,7 +70,7 @@ export class TursoMessagesStore implements MessagesStoreInterface {
     }
   }
 
-  async fetch(id: string): Promise<Result<MessageModel, string>> {
+  async fetchOne(id: string): Promise<Result<MessageModel, string>> {
     try {
       const result = await this.sqlite.execute({
         sql: 'SELECT * FROM messages WHERE id = :id',
@@ -158,7 +162,7 @@ export class TursoMessagesStore implements MessagesStoreInterface {
         return err('Message not found');
       }
 
-      return this.fetch(id);
+      return this.fetchOne(id);
     } catch (error: unknown) {
       return err(`Database error: ${error instanceof Error ? error.message : String(error)}`);
     }
