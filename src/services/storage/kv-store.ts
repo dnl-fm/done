@@ -45,12 +45,29 @@ export type Secondary = {
   value?: string[];
 };
 
+/**
+ * Abstract base class for key-value store operations.
+ * Provides common functionality for storing and retrieving data using Deno.Kv.
+ */
 export abstract class KvStore {
   constructor(protected kv: Deno.Kv) {}
 
+  /**
+   * Gets the name of the store.
+   * @returns {string} The store name.
+   */
   abstract getStoreName(): string;
+
+  /**
+   * Gets the prefix used for model IDs in this store.
+   * @returns {string} The model ID prefix.
+   */
   abstract getModelIdPrefix(): string;
 
+  /**
+   * Generates a unique log ID with a sortable timestamp.
+   * @returns {string} A unique log ID in the format "log_[sortableId]".
+   */
   static buildLogId() {
     return `log_${Security.generateSortableId()}`;
   }
@@ -71,6 +88,10 @@ export abstract class KvStore {
     return [...KvStore.getStoresBaseKey(), 'secondary'];
   }
 
+  /**
+   * Generates a unique model ID.
+   * @returns {string} A unique model identifier.
+   */
   buildModelId() {
     return Security.generateId();
   }
@@ -79,11 +100,23 @@ export abstract class KvStore {
     return `${this.getModelIdPrefix().toLowerCase()}_${this.buildModelId()}`;
   }
 
+  /**
+   * Gets secondary indices for a given model.
+   * Override this method to implement custom secondary indices.
+   * @param {unknown} model - The model to get secondaries for.
+   * @returns {Secondary[]} Array of secondary indices.
+   */
   // deno-lint-ignore no-unused-vars
   getSecondaries(model: unknown): Secondary[] {
     return [];
   }
 
+  /**
+   * Fetches multiple models by their IDs.
+   * @template Type The type of models to fetch.
+   * @param {string[]} ids - Array of model IDs to fetch.
+   * @returns {Promise<Type[]>} Array of fetched models, sorted by updated_at.
+   */
   async fetchMany<Type>(ids: string[]) {
     const models: Type[] = [];
 
@@ -136,13 +169,20 @@ export abstract class KvStore {
     return this.kv.list<Type>({ prefix: this.buildPrimaryKey() }, options);
   }
 
+  /**
+   * Creates a new model in the store.
+   * @template Type The type of model to create.
+   * @param {object} data - The data to create the model with.
+   * @param {object} [options] - Optional creation options.
+   * @param {string} [options.withId] - Specific ID to use for the new model.
+   * @returns {Promise<Type>} The created model.
+   */
   protected async _create<Type>(data: object, options?: { withId: string }) {
     const id = options?.withId || this.buildModelIdWithPrefix();
     const model = { id, ...data, created_at: new Date(), updated_at: new Date() };
     await this.kv.set(this.buildPrimaryKey(model.id), model);
 
     // HANDLE SECONDARIES
-
     for (const secondary of this.getSecondaries(model)) {
       secondary.value = secondary.value || [model.id];
 
@@ -159,6 +199,14 @@ export abstract class KvStore {
     return model as Type;
   }
 
+  /**
+   * Updates an existing model in the store.
+   * @template Type The type of model to update.
+   * @param {string} id - The ID of the model to update.
+   * @param {Partial<Type>} data - The data to update the model with.
+   * @returns {Promise<Type>} The updated model.
+   * @throws {Error} If the model is not found.
+   */
   protected async _update<Type>(id: string, data: Partial<Type>) {
     const before = await this._fetch<Type>(id);
 
@@ -170,7 +218,6 @@ export abstract class KvStore {
     await this.kv.set(this.buildPrimaryKey(id), after);
 
     // HANDLE SECONDARIES
-
     const secondariesWithOldData = this.getSecondaries(before);
 
     for (const [index, secondary] of Object.entries(this.getSecondaries(after))) {
@@ -205,6 +252,12 @@ export abstract class KvStore {
     return entry.value;
   }
 
+  /**
+   * Casts data to the specified type, preserving only the data fields.
+   * @template Type The type to cast to.
+   * @param {Omit<Type, 'id' | 'created_at' | 'updated_at'>} data - The data to cast.
+   * @returns {Omit<Type, 'id' | 'created_at' | 'updated_at'>} The cast data.
+   */
   protected cast<Type>(data: Omit<Type, 'id' | 'created_at' | 'updated_at'>): Omit<Type, 'id' | 'created_at' | 'updated_at'> {
     return data;
   }

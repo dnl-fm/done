@@ -7,15 +7,28 @@ import { Http } from '../utils/http.ts';
 import { Routes } from '../utils/routes.ts';
 import { Security } from '../utils/security.ts';
 
+/**
+ * Handles routing for message-related endpoints.
+ */
 export class MessageRoutes {
   private basePath = `/messages`;
   private routes = Routes.initHono({ basePath: this.basePath });
 
+  /**
+   * Creates a new MessageRoutes instance.
+   * @param {Deno.Kv} kv - The key-value store instance.
+   * @param {MessagesStoreInterface} messageStore - The message store implementation.
+   */
   constructor(
     private readonly kv: Deno.Kv,
     private readonly messageStore: MessagesStoreInterface,
   ) {}
 
+  /**
+   * Gets the versioned base path for message routes.
+   * @param {string} version - API version string.
+   * @returns {string} The complete base path including version.
+   */
   getBasePath(version: string) {
     return `/${version}/${this.basePath.replace('/', '')}`;
   }

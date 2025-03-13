@@ -1,15 +1,21 @@
 import { Context } from 'hono';
-import { KVStore } from '../services/storage/kv-store.ts';
-import { StorageInterface } from '../services/storage/storage-interface.ts';
-import { MessageModel } from '../stores/message-model.ts';
+import { MessagesStoreInterface } from '../stores/messages-store-interface.ts';
 import { Routes } from '../utils/routes.ts';
 
+/**
+ * Handles routing for admin-related endpoints.
+ */
 export class AdminRoutes {
   private basePath = `/admin`;
   private routes = Routes.initHono({ basePath: this.basePath });
 
-  constructor(private readonly kv: Deno.Kv) {}
+  constructor(private readonly messageStore: MessagesStoreInterface) {}
 
+  /**
+   * Gets the versioned base path for admin routes.
+   * @param {string} version - API version string.
+   * @returns {string} The complete base path including version.
+   */
   getBasePath(version: string) {
     return `/${version}/${this.basePath.replace('/', '')}`;
   }

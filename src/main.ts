@@ -1,11 +1,13 @@
 import { Context } from 'hono';
-import { bearerAuth } from 'hono/bearer-auth';
 import { MessageStateManager } from './managers/message-state-manager.ts';
 import { AdminRoutes } from './routes/admin-routes.ts';
 import { MessageRoutes } from './routes/message-routes.ts';
+import { SystemRoutes } from './routes/system-routes.ts';
+import { AuthMiddleware } from './services/auth-middleware.ts';
 import { SystemMessage } from './services/storage/kv-store.ts';
 import { SqliteStore } from './services/storage/sqlite-store.ts';
 import { StoreFactory } from './stores/store-factory.ts';
+import { Env } from './utils/env.ts';
 import { Routes } from './utils/routes.ts';
 import { Security } from './utils/security.ts';
 import { VERSION_STRING } from './version.ts';
@@ -19,7 +21,13 @@ const messageStore = StoreFactory.getMessagesStore({ kv, sqlite });
 const hono = Routes.initHono();
 
 // Add middleware
-hono.use(`/${VERSION_STRING}/*`, bearerAuth({ token: Deno.env.get('AUTH_TOKEN') || Security.generateAuthToken() }));
+hono.use(
+  `/${VERSION_STRING}/*`,
+  AuthMiddleware.bearer({
+    token: Env.get('AUTH_TOKEN') || Security.generateAuthToken(),
+    skipPaths: [`/${VERSION_STRING}/system/ping`],
+  }),
+);
 
 // Add error handler
 hono.onError((error: Error, c: Context) => {
@@ -60,7 +68,8 @@ kv.listenQueue(async (incoming: unknown) => {
 
 const routes = [
   new MessageRoutes(kv, messageStore),
-  new AdminRoutes(kv),
+  new AdminRoutes(messageStore),
+  new SystemRoutes(),
 ];
 
 for (const route of routes) {
