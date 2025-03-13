@@ -9,7 +9,7 @@ export function createTestMessage(): SystemMessage {
     type: SYSTEM_MESSAGE_TYPE.MESSAGE_RECEIVED,
     data: { test: 'data' },
     object: 'test',
-    createdAt: new Date(),
+    created_at: new Date(),
   };
 }
 

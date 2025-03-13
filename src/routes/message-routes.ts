@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { MessageReceivedDataSchema, MessageReceivedResponseSchema } from '../schemas/message-schema.ts';
 import { SYSTEM_MESSAGE_TYPE, SystemMessage } from '../services/storage/kv-store.ts';
+import { MESSAGE_STATUS } from '../stores/kv-message-model.ts';
 import { MESSAGES_STORE_NAME } from '../stores/kv-messages-store.ts';
-import { MESSAGE_STATUS, MessagePayload, MessageReceivedData } from '../stores/message-model.ts';
 import { MessagesStoreInterface } from '../stores/messages-store-interface.ts';
 import { Http } from '../utils/http.ts';
 import { Routes } from '../utils/routes.ts';
@@ -34,14 +35,16 @@ export class MessageRoutes {
 
     this.routes.get('/by-status/:status', async (c) => {
       const status = c.req.param('status');
-      const statusZod = z.object({ status: z.nativeEnum(MESSAGE_STATUS) });
+      const statusZod = z.object({
+        status: z.enum(['CREATED', 'QUEUED', 'DELIVER', 'SENT', 'RETRY', 'DLQ', 'ARCHIVED']),
+      });
       const validate = statusZod.safeParse({ status: status.toUpperCase() });
 
       if (!validate.success) {
         return c.json({ error: `Unknown status ${status}` }, 400);
       }
 
-      const result = await this.messageStore.fetchByStatus(validate.data.status);
+      const result = await this.messageStore.fetchByStatus(validate.data.status as MESSAGE_STATUS);
 
       if (result.isErr()) {
         return c.json({ error: result.error }, 404);
@@ -62,14 +65,14 @@ export class MessageRoutes {
         object: MESSAGES_STORE_NAME,
         data: {
           id: nextId,
-          publishAt: publishAtDate,
+          publish_at: publishAtDate,
           payload: {
             headers,
             url: callbackUrl,
             data: Http.isJson(c) ? await c.req.json() : undefined,
-          } as MessagePayload,
-        } as MessageReceivedData,
-        createdAt: new Date(),
+          },
+        } as z.infer<typeof MessageReceivedDataSchema>,
+        created_at: new Date(),
       } as SystemMessage;
 
       console.log(`[${new Date().toISOString()}] enqueue new message`, message.data);
@@ -78,7 +81,7 @@ export class MessageRoutes {
 
       console.log(`[${new Date().toISOString()}] message enqueued with id ${nextId}`);
 
-      return c.json({ id: nextId, publishAt: publishAtDate.toISOString() }, 201);
+      return c.json({ id: nextId, publish_at: publishAtDate.toISOString() } as z.infer<typeof MessageReceivedResponseSchema>, 201);
     });
 
     return this.routes;

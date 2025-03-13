@@ -3,7 +3,7 @@ import { Security } from '../../utils/security.ts';
 
 export type HasDates = {
   createdAt: Date;
-  updatedAt: Date;
+  updated_at: Date;
 };
 
 export type Model = HasDates & {
@@ -31,7 +31,7 @@ export type SystemMessage = {
   type: SYSTEM_MESSAGE_TYPE;
   data: unknown;
   object: string;
-  createdAt: Date;
+  created_at: Date;
 };
 
 export enum SECONDARY_TYPE {
@@ -99,7 +99,7 @@ export abstract class KvStore {
   }
 
   sortByUpdatedAt<Type>(models: HasDates[], direction: 'asc' | 'desc' = 'desc') {
-    models.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    models.sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
 
     if (direction === 'asc') {
       models.reverse();
@@ -138,7 +138,7 @@ export abstract class KvStore {
 
   protected async _create<Type>(data: object, options?: { withId: string }) {
     const id = options?.withId || this.buildModelIdWithPrefix();
-    const model = { id, ...data, createdAt: new Date(), updatedAt: new Date() };
+    const model = { id, ...data, created_at: new Date(), updated_at: new Date() };
     await this.kv.set(this.buildPrimaryKey(model.id), model);
 
     // HANDLE SECONDARIES
@@ -166,7 +166,7 @@ export abstract class KvStore {
       throw new Error(`model not found ${id}`);
     }
 
-    const after = { ...before, ...data, updatedAt: new Date() };
+    const after = { ...before, ...data, updated_at: new Date() };
     await this.kv.set(this.buildPrimaryKey(id), after);
 
     // HANDLE SECONDARIES
@@ -205,7 +205,7 @@ export abstract class KvStore {
     return entry.value;
   }
 
-  protected cast<Type>(data: Omit<Type, 'id' | 'createdAt' | 'updatedAt'>): Omit<Type, 'id' | 'createdAt' | 'updatedAt'> {
+  protected cast<Type>(data: Omit<Type, 'id' | 'created_at' | 'updated_at'>): Omit<Type, 'id' | 'created_at' | 'updated_at'> {
     return data;
   }
 
@@ -282,7 +282,7 @@ export abstract class KvStore {
   }
 
   private async triggerWriteEvent(type: SYSTEM_MESSAGE_TYPE, data: { before?: unknown; after?: unknown }) {
-    const log: SystemMessage = { type, data, id: KvStore.buildLogId(), object: this.getStoreName(), createdAt: new Date() };
+    const log: SystemMessage = { type, data, id: KvStore.buildLogId(), object: this.getStoreName(), created_at: new Date() };
 
     // ##############################################
     // enqueue message

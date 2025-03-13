@@ -76,7 +76,7 @@ export class MessageStateManager {
       type: SYSTEM_MESSAGE_TYPE.MESSAGE_QUEUED,
       object: this.getStore().getStoreName(),
       data: model,
-      createdAt: new Date(),
+      created_at: new Date(),
     };
 
     await this.kv.enqueue(message, { delay });
@@ -92,7 +92,7 @@ export class MessageStateManager {
       type: SYSTEM_MESSAGE_TYPE.MESSAGE_RETRY,
       object: this.getStore().getStoreName(),
       data: model,
-      createdAt: new Date(),
+      created_at: new Date(),
     };
 
     await this.kv.enqueue(message, { delay });
