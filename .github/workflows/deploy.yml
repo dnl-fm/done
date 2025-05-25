@@ -50,13 +50,14 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "done-staging" # Your Deno Deploy staging project name
-          entrypoint: "src/main.ts"
+          entrypoint: "deploy.ts"
           root: "."
+          include: "deno.json"
           exclude: |
             tests/
             docs/
             .github/
-            *.md
+            README.md
             .gitignore
         env:
           DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
@@ -129,13 +130,14 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "done-production" # Your Deno Deploy production project name
-          entrypoint: "src/main.ts"
+          entrypoint: "deploy.ts"
           root: "."
+          include: "deno.json"
           exclude: |
             tests/
             docs/
             .github/
-            *.md
+            README.md
             .gitignore
             bruno-collection/
         env:

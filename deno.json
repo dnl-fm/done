@@ -14,6 +14,7 @@
   },
   "tasks": {
     "dev": "deno run -A --env=.env.local --watch --unstable-kv --unstable-cron src/main.ts",
+    "start": "deno run -A --unstable-kv --unstable-cron src/main.ts",
     "clean": "deno fmt -q && deno lint ./src",
     "test": "deno test -A --unstable-kv tests/"
   },

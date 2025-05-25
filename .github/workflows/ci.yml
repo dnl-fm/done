@@ -116,7 +116,7 @@ jobs:
 
       - name: Start application
         run: |
-          deno run -A src/main.ts &
+          deno task start &
           APP_PID=$!
           echo "APP_PID=$APP_PID" >> $GITHUB_ENV
           

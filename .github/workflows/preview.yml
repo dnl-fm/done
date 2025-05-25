@@ -34,13 +34,14 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "done-preview-pr-${{ github.event.number }}"
-          entrypoint: "src/main.ts"
+          entrypoint: "deploy.ts"
           root: "."
+          include: "deno.json"
           exclude: |
             tests/
             docs/
             .github/
-            *.md
+            README.md
             .gitignore
         env:
           DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
