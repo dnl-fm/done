@@ -70,9 +70,7 @@ kv.listenQueue(async (incoming: unknown) => {
 
 // Create admin routes based on storage type
 const storageType = StoreFactory.getStorageType();
-const adminRoutes = storageType === 'KV' 
-  ? new KvAdminRoutes(messageStore, logsStore, kv)
-  : new TursoAdminRoutes(messageStore, logsStore, sqlite);
+const adminRoutes = storageType === 'KV' ? new KvAdminRoutes(messageStore, logsStore, kv) : new TursoAdminRoutes(messageStore, logsStore, sqlite);
 
 const routes = [
   new MessageRoutes(kv, messageStore),

@@ -28,7 +28,7 @@ export class TursoLogsStore implements LogsStoreInterface {
 
   async create(
     data: z.infer<typeof LogMessageDataSchema>,
-    options?: { withId: string }
+    options?: { withId: string },
   ): Promise<z.infer<typeof LogMessageModelSchema>> {
     const id = options?.withId || this.buildModelIdWithPrefix();
     const now = Date.now();
@@ -66,7 +66,7 @@ export class TursoLogsStore implements LogsStoreInterface {
             ORDER BY created_at ASC`,
       args: { message_id: messageId },
     });
-    
+
     return result.rows.map((row) => ({
       id: row.id as string,
       type: row.type as string,
@@ -86,7 +86,7 @@ export class TursoLogsStore implements LogsStoreInterface {
             LIMIT :limit`,
       args: { limit },
     });
-    
+
     return result.rows.map((row) => ({
       id: row.id as string,
       type: row.type as string,

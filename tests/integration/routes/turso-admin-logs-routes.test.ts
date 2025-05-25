@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'jsr:@std/testing/bdd';
+import { afterEach, beforeEach, describe, it } from 'jsr:@std/testing/bdd';
 import { expect } from 'jsr:@std/expect';
 import { Client } from 'libsql-core';
 import { TursoAdminRoutes } from '../../../src/routes/turso-admin-routes.ts';
@@ -24,7 +24,7 @@ describe('Turso Admin Logs Routes', () => {
     // Create in-memory SQLite for testing
     sqliteStore = new SqliteStore({ url: ':memory:' });
     sqlite = await sqliteStore.getClient();
-    
+
     // Run migrations to set up tables
     await new Migrations(sqliteStore).migrate({ force: true });
 
@@ -66,7 +66,7 @@ describe('Turso Admin Logs Routes', () => {
         publish_at: new Date(),
         retried: 0,
       });
-      
+
       if (messageResult.isErr()) throw new Error('Failed to create message');
       const message = messageResult.value;
 
@@ -82,7 +82,7 @@ describe('Turso Admin Logs Routes', () => {
 
       await logsStore.create({
         type: 'UPDATE',
-        object: 'message', 
+        object: 'message',
         message_id: message.id,
         before_data: { id: message.id, status: 'CREATED' },
         after_data: { id: message.id, status: 'QUEUED' },
@@ -95,11 +95,11 @@ describe('Turso Admin Logs Routes', () => {
       const data = await response.json();
       expect(Array.isArray(data)).toBe(true);
       expect(data).toHaveLength(2);
-      
+
       // Should be ordered by created_at DESC
       expect(data[0].type).toBe('UPDATE');
       expect(data[1].type).toBe('CREATE');
-      
+
       // Verify log structure
       expect(data[0]).toMatchObject({
         type: 'UPDATE',
@@ -134,7 +134,7 @@ describe('Turso Admin Logs Routes', () => {
         publish_at: new Date(),
         retried: 0,
       });
-      
+
       if (messageResult.isErr()) throw new Error('Failed to create message');
       const message = messageResult.value;
 
@@ -168,10 +168,10 @@ describe('Turso Admin Logs Routes', () => {
         publish_at: new Date(),
         retried: 0,
       });
-      
+
       if (otherMessageResult.isErr()) throw new Error('Failed to create other message');
       const otherMessage = otherMessageResult.value;
-      
+
       await logsStore.create({
         type: 'CREATE',
         object: 'message',
@@ -188,11 +188,11 @@ describe('Turso Admin Logs Routes', () => {
       expect(data.messageId).toBe(message.id);
       expect(Array.isArray(data.logs)).toBe(true);
       expect(data.logs).toHaveLength(2);
-      
+
       // Should be ordered by created_at ASC (chronological order)
       expect(data.logs[0].type).toBe('CREATE');
       expect(data.logs[1].type).toBe('UPDATE');
-      
+
       // Verify only logs for requested message are returned
       data.logs.forEach((log: { message_id: string }) => {
         expect(log.message_id).toBe(message.id);
@@ -213,7 +213,7 @@ describe('Turso Admin Logs Routes', () => {
         publish_at: new Date(),
         retried: 0,
       });
-      
+
       if (messageResult.isErr()) throw new Error('Failed to create message');
       const message = messageResult.value;
 
@@ -264,7 +264,7 @@ describe('Turso Admin Logs Routes', () => {
         publish_at: new Date(),
         retried: 0,
       });
-      
+
       if (messageResult.isErr()) throw new Error('Failed to create message');
       const message = messageResult.value;
 

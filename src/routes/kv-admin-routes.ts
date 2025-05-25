@@ -14,7 +14,7 @@ export class KvAdminRoutes {
   constructor(
     private readonly messageStore: MessagesStoreInterface,
     private readonly logsStore: LogsStoreInterface,
-    private readonly kv: Deno.Kv
+    private readonly kv: Deno.Kv,
   ) {}
 
   /**
@@ -80,20 +80,20 @@ export class KvAdminRoutes {
 
     this.routes.get('/log/:messageId', async (c: Context) => {
       const messageId = c.req.param('messageId');
-      
+
       try {
         // Get log IDs for this message from secondary index
         const secondaryKey = AbstractKvStore.buildLogSecondaryKey(messageId);
         const logIdsResult = await this.kv.get<string[]>(secondaryKey);
-        
+
         if (!logIdsResult.value || logIdsResult.value.length === 0) {
-          return c.json({ 
-            message: `No logs found for message ${messageId}`, 
+          return c.json({
+            message: `No logs found for message ${messageId}`,
             messageId,
-            logs: [] 
+            logs: [],
           });
         }
-        
+
         // Fetch all log entries for this message
         const logs: unknown[] = [];
         for (const logId of logIdsResult.value) {
@@ -103,7 +103,7 @@ export class KvAdminRoutes {
             logs.push(logEntry.value);
           }
         }
-        
+
         // Sort logs by creation time (most recent first)
         const sortedLogs = logs.sort((a: unknown, b: unknown) => {
           const aLog = a as { created_at: string };
@@ -112,19 +112,18 @@ export class KvAdminRoutes {
           const dateB = new Date(bLog.created_at).getTime();
           return dateB - dateA;
         });
-        
-        return c.json({ 
+
+        return c.json({
           message: `Found ${logs.length} log entries for message ${messageId}`,
           messageId,
-          logs: sortedLogs 
+          logs: sortedLogs,
         });
-        
       } catch (error) {
         console.error('Error retrieving logs for message:', messageId, error);
-        return c.json({ 
+        return c.json({
           error: 'Failed to retrieve logs',
           messageId,
-          logs: [] 
+          logs: [],
         }, 500);
       }
     });

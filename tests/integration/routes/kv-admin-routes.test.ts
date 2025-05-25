@@ -197,7 +197,7 @@ describe('KvAdminRoutes integration tests', () => {
       };
 
       await messageStore.create(message);
-      
+
       // Update the message to generate more logs
       await messageStore.update('msg_test_logs', { status: 'QUEUED' });
 

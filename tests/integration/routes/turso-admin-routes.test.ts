@@ -22,10 +22,10 @@ describe('TursoAdminRoutes integration tests', () => {
   beforeEach(async () => {
     sqliteStore = new SqliteStore({ url: ':memory:' });
     sqlite = await sqliteStore.getClient();
-    
+
     // Run migrations to create tables
     await new Migrations(sqliteStore).migrate({ force: true });
-    
+
     messageStore = new TursoMessagesStore(sqlite);
     const logsStore = new TursoLogsStore(sqlite);
     adminRoutes = new TursoAdminRoutes(messageStore, logsStore, sqlite);

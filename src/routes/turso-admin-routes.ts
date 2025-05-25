@@ -15,7 +15,7 @@ export class TursoAdminRoutes {
   constructor(
     private readonly messageStore: MessagesStoreInterface,
     private readonly logsStore: LogsStoreInterface,
-    private readonly sqlite: Client
+    private readonly sqlite: Client,
   ) {}
 
   /**
@@ -32,7 +32,7 @@ export class TursoAdminRoutes {
       try {
         // Get message counts by status
         const stats: Record<string, number> = {};
-        
+
         const statusResult = await this.sqlite.execute(`
           SELECT status, COUNT(*) as count 
           FROM messages 
@@ -56,14 +56,14 @@ export class TursoAdminRoutes {
 
     this.routes.get('/raw/:match?', async (c: Context) => {
       const match = c.req.param('match');
-      
+
       try {
         if (match === 'messages' || !match) {
           const result = await this.sqlite.execute('SELECT * FROM messages ORDER BY created_at DESC LIMIT 100');
-          return c.json(result.rows.map(row => ({ table: 'messages', data: row })));
+          return c.json(result.rows.map((row) => ({ table: 'messages', data: row })));
         } else if (match === 'migrations') {
           const result = await this.sqlite.execute('SELECT * FROM migrations ORDER BY applied_at DESC');
-          return c.json(result.rows.map(row => ({ table: 'migrations', data: row })));
+          return c.json(result.rows.map((row) => ({ table: 'migrations', data: row })));
         } else {
           return c.json({ message: `Unknown table: ${match}` }, 400);
         }
@@ -96,7 +96,7 @@ export class TursoAdminRoutes {
 
     this.routes.delete('/reset/:match?', async (c: Context) => {
       const match = c.req.param('match');
-      
+
       try {
         if (match === 'messages' || !match) {
           await this.sqlite.execute('DELETE FROM messages');
@@ -106,8 +106,8 @@ export class TursoAdminRoutes {
           await (this.logsStore as TursoLogsStore).reset();
           return c.json({ message: 'Logs table reset!', match });
         } else if (match === 'migrations') {
-          return c.json({ 
-            message: 'Cannot reset migrations table - this would break the database structure' 
+          return c.json({
+            message: 'Cannot reset migrations table - this would break the database structure',
           }, 400);
         } else {
           return c.json({ message: `Unknown table: ${match}` }, 400);
