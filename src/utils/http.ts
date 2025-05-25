@@ -1,5 +1,5 @@
 import { Context } from 'hono';
-import { Err, Ok } from 'result';
+import { err, ok } from 'result';
 
 export const HTTP_NAMESPACE = 'Done';
 
@@ -16,9 +16,10 @@ export class Http {
     try {
       await Deno.resolveDns(new URL(url).hostname, 'A', { signal: Http.getAbortSignal(options.timeoutInSeconds) });
 
-      return Ok(true);
-    } catch (error) {
-      return Err({ message: `DNS validation failed for ${url}`, error: error.message });
+      return ok(true);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return err({ message: `DNS validation failed for ${url}`, error: errorMessage });
     }
   }
 

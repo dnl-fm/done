@@ -120,8 +120,8 @@ export class MessageStateManager {
 
       responseStatus = response.status;
       lastDeliveryErrorMessage = 'invalid response status';
-    } catch (error) {
-      lastDeliveryErrorMessage = error.message;
+    } catch (error: unknown) {
+      lastDeliveryErrorMessage = error instanceof Error ? error.message : String(error);
     }
 
     if (!model.lastErrors) {

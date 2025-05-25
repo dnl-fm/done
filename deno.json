@@ -1,12 +1,12 @@
 {
   "imports": {
-    "hono": "https://deno.land/x/hono@v3.9.0/mod.ts",
-    "bearerAuth": "https://deno.land/x/hono@v3.9.0/middleware/bearer-auth/index.ts",
-    "zod": "https://esm.sh/zod@3.22.4",
-    "result": "https://esm.sh/ts-results@3.3.0",
-    "ulid": "https://esm.sh/ulid@2.3.0",
-    "generate-unique-id": "https://esm.sh/generate-unique-id@2.0.3",
-    "deep-object-diff": "npm:deep-object-diff"
+    "hono": "jsr:@hono/hono@4.7.4",
+    "zod": "npm:zod@3.24.2",
+    "zod-validator": "npm:@hono/zod-validator@0.4.3",
+    "result": "npm:neverthrow@6.1.0",
+    "ulid": "npm:ulid@2.3.0",
+    "generate-unique-id": "npm:generate-unique-id@2.0.3",
+    "deep-object-diff": "npm:deep-object-diff@1.1.9"
   },
   "tasks": {
     "dev": "deno run -A --env=.env.local --watch --unstable-kv --unstable-cron src/main.ts",

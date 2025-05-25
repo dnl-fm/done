@@ -1,5 +1,4 @@
 import { Context, Hono } from 'hono';
-
 import { VERSION } from '../main.ts';
 import { MessageModel } from '../stores/message-model.ts';
 import { Store } from '../utils/store.ts';

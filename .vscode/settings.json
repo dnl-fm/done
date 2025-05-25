@@ -1,29 +1,18 @@
 {
   "deno.enable": true,
   "deno.lint": true,
-  "deno.unstable": true,
+  "deno.codeLens.implementations": true,
+  "deno.unstable": [
+    "kv",
+    "cron"
+  ],
   "editor.formatOnSave": true,
   "[typescript]": {
     "editor.defaultFormatter": "denoland.vscode-deno"
   },
-  "workbench.colorCustomizations": {
-    "activityBar.activeBackground": "#c84883",
-    "activityBar.background": "#c84883",
-    "activityBar.foreground": "#e7e7e7",
-    "activityBar.inactiveForeground": "#e7e7e799",
-    "activityBarBadge.background": "#7ac43b",
-    "activityBarBadge.foreground": "#15202b",
-    "commandCenter.border": "#e7e7e799",
-    "sash.hoverBorder": "#c84883",
-    "statusBar.background": "#aa336a",
-    "statusBar.foreground": "#e7e7e7",
-    "statusBarItem.hoverBackground": "#c84883",
-    "statusBarItem.remoteBackground": "#aa336a",
-    "statusBarItem.remoteForeground": "#e7e7e7",
-    "titleBar.activeBackground": "#aa336a",
-    "titleBar.activeForeground": "#e7e7e7",
-    "titleBar.inactiveBackground": "#aa336a99",
-    "titleBar.inactiveForeground": "#e7e7e799"
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "always",
+    "source.organizeImports": "always"
   },
-  "peacock.color": "#AA336A"
+  "editor.tabSize": 2,
 }

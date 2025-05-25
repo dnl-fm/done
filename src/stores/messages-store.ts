@@ -1,5 +1,4 @@
-import { Err, Ok } from 'result';
-
+import { err, ok } from 'result';
 import { Dates } from '../utils/dates.ts';
 import { Security } from '../utils/security.ts';
 import { Secondary, SECONDARY_TYPE, Store } from '../utils/store.ts';
@@ -14,19 +13,19 @@ export const MESSAGES_STORE_NAME = 'messages';
 export const MESSAGES_MODEL_ID_PREFIX = 'msg';
 
 export class MessagesStore extends Store {
-  getStoreName() {
+  override getStoreName() {
     return MESSAGES_STORE_NAME;
   }
 
-  getModelIdPrefix(): string {
+  override getModelIdPrefix(): string {
     return MESSAGES_MODEL_ID_PREFIX;
   }
 
-  buildModelId(): string {
+  override buildModelId(): string {
     return Security.generateId();
   }
 
-  getSecondaries(model: MessageModel): Secondary[] {
+  override getSecondaries(model: MessageModel): Secondary[] {
     return [
       { type: SECONDARY_TYPE.MANY, key: [SECONDARIES.BY_STATUS, model.status] },
       { type: SECONDARY_TYPE.MANY, key: [SECONDARIES.BY_PUBLISH_DATE, Dates.getDateOnly(model.publishAt)] },
@@ -37,51 +36,51 @@ export class MessagesStore extends Store {
     const model = await this._fetch<MessageModel>(id);
 
     if (model === null) {
-      return Err('Unknown message');
+      return err('Unknown message');
     }
 
-    return Ok(model);
+    return ok(model);
   }
 
   async fetchByDate(date: Date) {
     const models = await this._fetchSecondary([SECONDARIES.BY_PUBLISH_DATE, Dates.getDateOnly(date)]);
 
     if (!models) {
-      return Ok([]);
+      return ok([]);
     }
 
-    return Ok(await this.fetchMany<MessageModel>(models));
+    return ok(await this.fetchMany<MessageModel>(models));
   }
 
   async fetchByStatus(status: MESSAGE_STATUS) {
     const models = await this._fetchSecondary([SECONDARIES.BY_STATUS, status]);
 
     if (!models) {
-      return Ok([]);
+      return ok([]);
     }
 
-    return Ok(await this.fetchMany<MessageModel>(models));
+    return ok(await this.fetchMany<MessageModel>(models));
   }
 
   async createFromReceivedData(data: MessageReceivedData) {
     const response = await this.create({ payload: data.payload, publishAt: data.publishAt, status: MESSAGE_STATUS.CREATED }, { withId: data.id });
 
-    return Ok(response);
+    return ok(response);
   }
 
   async create(data: MessageData, options?: { withId: string }) {
     const response = await this._create<MessageModel>({ ...data, retried: 0 }, options);
 
-    return Ok(response);
+    return ok(response);
   }
 
   async update(id: string, data: Partial<MessageData>) {
     const response = await this._update<MessageModel>(id, data);
 
-    return Ok(response);
+    return ok(response);
   }
 
   async delete(id: string) {
-    Ok(await this._delete(id));
+    ok(await this._delete(id));
   }
 }

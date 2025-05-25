@@ -1,14 +1,48 @@
 {
-  "version": "3",
-  "packages": {
-    "specifiers": {
-      "npm:deep-object-diff": "npm:deep-object-diff@1.1.9"
+  "version": "4",
+  "specifiers": {
+    "jsr:@hono/hono@4.7.4": "4.7.4",
+    "npm:@hono/zod-validator@0.4.3": "0.4.3_hono@4.7.4_zod@3.24.2",
+    "npm:deep-object-diff@1.1.9": "1.1.9",
+    "npm:generate-unique-id@2.0.3": "2.0.3",
+    "npm:neverthrow@6.1.0": "6.1.0",
+    "npm:ts-results@3.3.0": "3.3.0",
+    "npm:ulid@2.3.0": "2.3.0",
+    "npm:zod@3.24.2": "3.24.2"
+  },
+  "jsr": {
+    "@hono/hono@4.7.4": {
+      "integrity": "c03c9cbe0fbfc4e51f3fee6502a7903aa4f9ef7c2c98635607b15eee14258825"
+    }
+  },
+  "npm": {
+    "@hono/zod-validator@0.4.3_hono@4.7.4_zod@3.24.2": {
+      "integrity": "sha512-xIgMYXDyJ4Hj6ekm9T9Y27s080Nl9NXHcJkOvkXPhubOLj8hZkOL8pDnnXfvCf5xEE8Q4oMFenQUZZREUY2gqQ==",
+      "dependencies": [
+        "hono",
+        "zod"
+      ]
     },
-    "npm": {
-      "deep-object-diff@1.1.9": {
-        "integrity": "sha512-Rn+RuwkmkDwCi2/oXOFS9Gsr5lJZu/yTGpK7wAaAIE75CC+LCGEZHpY6VQJa/RoJcrmaA/docWJZvYohlNkWPA==",
-        "dependencies": {}
-      }
+    "deep-object-diff@1.1.9": {
+      "integrity": "sha512-Rn+RuwkmkDwCi2/oXOFS9Gsr5lJZu/yTGpK7wAaAIE75CC+LCGEZHpY6VQJa/RoJcrmaA/docWJZvYohlNkWPA=="
+    },
+    "generate-unique-id@2.0.3": {
+      "integrity": "sha512-oADhkjv6nsiHNJNa+kCe/h6vqgooEPmASHU40hWGbhDODb/xKp5ej7l+7BNs3bQ/v8DCbaVJ42//kN2umQfr6A=="
+    },
+    "hono@4.7.4": {
+      "integrity": "sha512-Pst8FuGqz3L7tFF+u9Pu70eI0xa5S3LPUmrNd5Jm8nTHze9FxLTK9Kaj5g/k4UcwuJSXTP65SyHOPLrffpcAJg=="
+    },
+    "neverthrow@6.1.0": {
+      "integrity": "sha512-xNbNjp/6M5vUV+mststgneJN9eJeJCDSYSBTaf3vxgvcKooP+8L0ATFpM8DGfmH7UWKJeoa24Qi33tBP9Ya3zA=="
+    },
+    "ts-results@3.3.0": {
+      "integrity": "sha512-FWqxGX2NHp5oCyaMd96o2y2uMQmSu8Dey6kvyuFdRJ2AzfmWo3kWa4UsPlCGlfQ/qu03m09ZZtppMoY8EMHuiA=="
+    },
+    "ulid@2.3.0": {
+      "integrity": "sha512-keqHubrlpvT6G2wH0OEfSW4mquYRcbe/J8NMmveoQOjUqmo+hXtO+ORCpWhdbZ7k72UtY61BL7haGxW6enBnjw=="
+    },
+    "zod@3.24.2": {
+      "integrity": "sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ=="
     }
   },
   "remote": {
@@ -169,7 +203,13 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:deep-object-diff"
+      "jsr:@hono/hono@4.7.4",
+      "npm:@hono/zod-validator@0.4.3",
+      "npm:deep-object-diff@1.1.9",
+      "npm:generate-unique-id@2.0.3",
+      "npm:neverthrow@6.1.0",
+      "npm:ulid@2.3.0",
+      "npm:zod@3.24.2"
     ]
   }
 }
