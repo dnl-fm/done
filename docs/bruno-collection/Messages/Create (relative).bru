@@ -7,11 +7,15 @@ meta {
 post {
   url: {{url}}/v1/messages/https://done.gotrequests.com/some-user-path/
   body: none
-  auth: none
+  auth: bearer
 }
 
 headers {
   Done-Delay: 4s
   Done-Forward-X-Foo: Bar
   Done-Failure-Callback: https://done.gotrequests.com/failed-requests
+}
+
+auth:bearer {
+  token: {{token}}
 }

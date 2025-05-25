@@ -1,8 +1,8 @@
 import { assertEquals, assertExists } from 'jsr:@std/assert';
 import { afterEach, beforeEach, describe, it } from 'jsr:@std/testing/bdd';
-import { MessageData, MessageModel, MessageReceivedData } from '../../src/stores/kv-message-model.ts';
-import { KvMessagesStore } from '../../src/stores/kv-messages-store.ts';
-import { KvStore } from '../../src/stores/kv-store.ts';
+import { MessageData, MessageModel, MessageReceivedData } from '../../src/stores/kv/kv-message-model.ts';
+import { KvMessagesStore } from '../../src/stores/kv/kv-messages-store.ts';
+import { KvUtilStore } from '../../src/stores/kv/kv-util-store.ts';
 import { Dates } from '../../src/utils/dates.ts';
 
 describe('KvMessagesStore integration tests', () => {
@@ -15,7 +15,7 @@ describe('KvMessagesStore integration tests', () => {
   });
 
   afterEach(async () => {
-    await new KvStore(kv).reset();
+    await new KvUtilStore(kv).reset();
     kv.close();
   });
 

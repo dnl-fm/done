@@ -1,10 +1,10 @@
 import { err, ok, Result } from 'result';
-import { Secondary, SECONDARY_TYPE } from '../services/storage/kv-store.ts';
-import { Dates } from '../utils/dates.ts';
-import { Security } from '../utils/security.ts';
+import { MessagesStoreInterface } from '../../interfaces/messages-store-interface.ts';
+import { Secondary, SECONDARY_TYPE } from '../../services/storage/kv-store.ts';
+import { Dates } from '../../utils/dates.ts';
+import { Security } from '../../utils/security.ts';
 import { AbstractKvStore } from './abstract-kv-store.ts';
 import { MESSAGE_STATUS, MessageData, MessageModel, MessageReceivedData } from './kv-message-model.ts';
-import { MessagesStoreInterface } from './messages-store-interface.ts';
 
 enum SECONDARIES {
   BY_STATUS = 'BY_STATUS',

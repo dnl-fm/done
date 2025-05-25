@@ -1,5 +1,5 @@
 import { Result } from 'result';
-import { MESSAGE_STATUS, MessageModel, MessageReceivedData } from './kv-message-model.ts';
+import { MESSAGE_STATUS, MessageModel, MessageReceivedData } from '../stores/kv/kv-message-model.ts';
 
 export interface MessagesStoreInterface {
   getStoreName(): string;

@@ -1,8 +1,8 @@
 import { z } from 'zod';
+import { MessagesStoreInterface } from '../interfaces/messages-store-interface.ts';
 import { MessageReceivedDataSchema, MessageReceivedResponseSchema, MessageStatusSchema } from '../schemas/message-schema.ts';
 import { SYSTEM_MESSAGE_TYPE, SystemMessage } from '../services/storage/kv-store.ts';
-import { MESSAGES_STORE_NAME } from '../stores/kv-messages-store.ts';
-import { MessagesStoreInterface } from '../stores/messages-store-interface.ts';
+import { MESSAGES_STORE_NAME } from '../stores/kv/kv-messages-store.ts';
 import { Http } from '../utils/http.ts';
 import { Routes } from '../utils/routes.ts';
 import { Security } from '../utils/security.ts';

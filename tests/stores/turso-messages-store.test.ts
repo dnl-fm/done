@@ -2,8 +2,8 @@ import { assertEquals, assertExists } from 'jsr:@std/assert';
 import { beforeEach, describe, it } from 'jsr:@std/testing/bdd';
 import { Client } from 'libsql-core';
 import { SqliteStore } from '../../src/services/storage/sqlite-store.ts';
-import { MESSAGE_STATUS, MessageModel } from '../../src/stores/kv-message-model.ts';
-import { TursoMessagesStore } from '../../src/stores/turso-messages-store.ts';
+import { MESSAGE_STATUS, MessageModel } from '../../src/stores/kv/kv-message-model.ts';
+import { TursoMessagesStore } from '../../src/stores/turso/turso-messages-store.ts';
 import { Dates } from '../../src/utils/dates.ts';
 import { Migrations } from '../../src/utils/migrations.ts';
 

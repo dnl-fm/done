@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, it } from 'jsr:@std/testing/bdd';
 import { z } from 'zod';
 import { MessageRoutes } from '../../../src/routes/message-routes.ts';
 import { MessageReceivedResponseSchema, MessageResponseSchema, MessageSchema } from '../../../src/schemas/message-schema.ts';
-import { KvMessagesStore } from '../../../src/stores/kv-messages-store.ts';
-import { KvStore } from '../../../src/stores/kv-store.ts';
+import { KvMessagesStore } from '../../../src/stores/kv/kv-messages-store.ts';
+import { KvUtilStore } from '../../../src/stores/kv/kv-util-store.ts';
 import { Routes } from '../../../src/utils/routes.ts';
 import { VERSION_STRING } from '../../../src/version.ts';
 
@@ -25,7 +25,7 @@ describe('KvMessageRoutes integration tests', () => {
   });
 
   afterEach(async () => {
-    await new KvStore(kv).reset();
+    await new KvUtilStore(kv).reset();
     kv.close();
   });
 

@@ -1,11 +1,11 @@
 meta {
-  name: Fetch By Status
+  name: Reset logs only
   type: http
-  seq: 4
+  seq: 6
 }
 
-get {
-  url: {{url}}/v1/messages/by-status/sent
+delete {
+  url: {{url}}/v1/admin/reset/logs
   body: none
   auth: bearer
 }

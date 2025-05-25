@@ -1,9 +1,9 @@
 import { Client, Row } from 'libsql-core';
 import { err, ok, Result } from 'result';
-import { Dates } from '../utils/dates.ts';
-import { Security } from '../utils/security.ts';
-import { MESSAGE_STATUS, MessageData, MessageModel, MessageReceivedData } from './kv-message-model.ts';
-import { MessagesStoreInterface } from './messages-store-interface.ts';
+import { MessagesStoreInterface } from '../../interfaces/messages-store-interface.ts';
+import { Dates } from '../../utils/dates.ts';
+import { Security } from '../../utils/security.ts';
+import { MESSAGE_STATUS, MessageData, MessageModel, MessageReceivedData } from '../kv/kv-message-model.ts';
 
 export class TursoMessagesStore implements MessagesStoreInterface {
   constructor(private sqlite: Client) {}

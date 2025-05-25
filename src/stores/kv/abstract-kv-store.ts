@@ -1,45 +1,8 @@
 import { diff } from 'deep-object-diff';
 
-import { Security } from '../utils/security.ts';
-
-export type HasDates = {
-  created_at: Date;
-  updated_at: Date;
-};
-
-export type Model = HasDates & {
-  id: string;
-};
-
-export type SYSTEM_MESSAGE_TYPE =
-  | 'STORE_CREATE_EVENT'
-  | 'STORE_UPDATE_EVENT'
-  | 'STORE_DELETE_EVENT'
-  | 'MESSAGE_RECEIVED'
-  | 'MESSAGE_QUEUED'
-  | 'MESSAGE_RETRY';
-
-export type SYSTEM_MESSAGE_STATUS =
-  | 'CREATED'
-  | 'RECEIVED'
-  | 'PROCESSED'
-  | 'IGNORE';
-
-export type SystemMessage = {
-  id: string;
-  type: SYSTEM_MESSAGE_TYPE;
-  data: unknown;
-  object: string;
-  created_at: Date;
-};
-
-export type SECONDARY_TYPE = 'ONE' | 'MANY';
-
-export type Secondary = {
-  type: SECONDARY_TYPE;
-  key: string[];
-  value?: string[];
-};
+import { z } from 'zod';
+import { HasDatesSchema, SecondarySchema, SecondaryTypeSchema, SystemMessageSchema, SystemMessageTypeSchema } from '../../schemas/system-schema.ts';
+import { Security } from '../../utils/security.ts';
 
 export abstract class AbstractKvStore {
   constructor(protected kv: Deno.Kv) {}
@@ -76,7 +39,7 @@ export abstract class AbstractKvStore {
   }
 
   // deno-lint-ignore no-unused-vars
-  getSecondaries(model: unknown): Secondary[] {
+  getSecondaries(model: unknown): z.infer<typeof SecondarySchema>[] {
     return [];
   }
 
@@ -91,10 +54,10 @@ export abstract class AbstractKvStore {
       }
     }
 
-    return this.sortByUpdatedAt(models as HasDates[]) as Type[];
+    return this.sortByUpdatedAt(models as z.infer<typeof HasDatesSchema>[]) as Type[];
   }
 
-  sortByUpdatedAt<Type>(models: HasDates[], direction: 'asc' | 'desc' = 'desc') {
+  sortByUpdatedAt<Type>(models: z.infer<typeof HasDatesSchema>[], direction: 'asc' | 'desc' = 'desc') {
     models.sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
 
     if (direction === 'asc') {
@@ -162,7 +125,7 @@ export abstract class AbstractKvStore {
       throw new Error(`model not found ${id}`);
     }
 
-    const after = { ...before, ...data, updatedAt: new Date() };
+    const after = { ...before, ...data, updated_at: new Date() };
     await this.kv.set(this.buildPrimaryKey(id), after);
 
     // HANDLE SECONDARIES
@@ -173,7 +136,8 @@ export abstract class AbstractKvStore {
       const oldKey = secondariesWithOldData[Number(index)].key;
       const newKey = secondary.key;
 
-      await this._updateSecondary(secondary.type, oldKey, newKey, secondary.value || [id]);
+      const value = Array.isArray(secondary.value) ? secondary.value : [secondary.value || id];
+      await this._updateSecondary(secondary.type, oldKey, newKey, value);
     }
 
     await this.triggerWriteEvent('STORE_UPDATE_EVENT', { before, after });
@@ -215,12 +179,12 @@ export abstract class AbstractKvStore {
     return keys;
   }
 
-  private async _addSecondary(secondary: Secondary) {
+  private async _addSecondary(secondary: z.infer<typeof SecondarySchema>) {
     // console.log('- adding secondary', { key: secondary.key, values: secondary.value });
     await this.kv.set(this.buildSecondaryKey(secondary.key), secondary.value);
   }
 
-  private async _updateSecondary(type: SECONDARY_TYPE, oldKey: string[], newKey: string[], value: string[]) {
+  private async _updateSecondary(type: z.infer<typeof SecondaryTypeSchema>, oldKey: string[], newKey: string[], value: string[]) {
     const beforeValues = await this._fetchSecondary(oldKey);
 
     // // console.log('- evaluating secondary update', { oldKey, newKey, value, beforeValues });
@@ -277,8 +241,8 @@ export abstract class AbstractKvStore {
     return [...this.buildPrimaryKey(), 'secondaries', ...key];
   }
 
-  private async triggerWriteEvent(type: SYSTEM_MESSAGE_TYPE, data: { before?: unknown; after?: unknown }) {
-    const log: SystemMessage = { type, data, id: AbstractKvStore.buildLogId(), object: this.getStoreName(), created_at: new Date() };
+  private async triggerWriteEvent(type: z.infer<typeof SystemMessageTypeSchema>, data: { before?: unknown; after?: unknown }) {
+    const log: z.infer<typeof SystemMessageSchema> = { type, data, id: AbstractKvStore.buildLogId(), object: this.getStoreName(), created_at: new Date() };
 
     // ##############################################
     // enqueue message

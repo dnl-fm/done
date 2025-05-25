@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { MessageRoutes } from '../../../src/routes/message-routes.ts';
 import { MessageReceivedResponseSchema, MessageResponseSchema, MessageSchema } from '../../../src/schemas/message-schema.ts';
 import { SqliteStore } from '../../../src/services/storage/sqlite-store.ts';
-import { KvStore } from '../../../src/stores/kv-store.ts';
-import { TursoMessagesStore } from '../../../src/stores/turso-messages-store.ts';
+import { KvUtilStore } from '../../../src/stores/kv/kv-util-store.ts';
+import { TursoMessagesStore } from '../../../src/stores/turso/turso-messages-store.ts';
 import { Migrations } from '../../../src/utils/migrations.ts';
 import { Routes } from '../../../src/utils/routes.ts';
 import { VERSION_STRING } from '../../../src/version.ts';
@@ -34,7 +34,7 @@ describe('TursoMessageRoutes integration tests', () => {
   });
 
   afterEach(async () => {
-    await new KvStore(kv).reset();
+    await new KvUtilStore(kv).reset();
     kv.close();
   });
 

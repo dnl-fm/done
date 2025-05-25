@@ -7,5 +7,9 @@ meta {
 post {
   url: {{url}}/v1/messages/https://done.gotrequests.com/some-user-path/
   body: none
-  auth: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
 }

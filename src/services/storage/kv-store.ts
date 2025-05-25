@@ -1,15 +1,6 @@
 import { diff } from 'deep-object-diff';
 import { Security } from '../../utils/security.ts';
 
-export type HasDates = {
-  createdAt: Date;
-  updated_at: Date;
-};
-
-export type Model = HasDates & {
-  id: string;
-};
-
 export enum SYSTEM_MESSAGE_TYPE {
   STORE_CREATE_EVENT = 'STORE_CREATE_EVENT',
   STORE_UPDATE_EVENT = 'STORE_UPDATE_EVENT',
@@ -17,13 +8,6 @@ export enum SYSTEM_MESSAGE_TYPE {
   MESSAGE_RECEIVED = 'MESSAGE_RECEIVED',
   MESSAGE_QUEUED = 'MESSAGE_QUEUED',
   MESSAGE_RETRY = 'MESSAGE_RETRY',
-}
-
-export enum SYSTEM_MESSAGE_STATUS {
-  CREATED = 'CREATED',
-  RECEIVED = 'RECEIVED',
-  PROCESSED = 'PROCESSED',
-  IGNORE = 'IGNORE',
 }
 
 export type SystemMessage = {
@@ -128,10 +112,10 @@ export abstract class KvStore {
       }
     }
 
-    return this.sortByUpdatedAt(models as HasDates[]) as Type[];
+    return this.sortByUpdatedAt(models as Array<{ updated_at: Date }>) as Type[];
   }
 
-  sortByUpdatedAt<Type>(models: HasDates[], direction: 'asc' | 'desc' = 'desc') {
+  sortByUpdatedAt<Type>(models: Array<{ updated_at: Date }>, direction: 'asc' | 'desc' = 'desc') {
     models.sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
 
     if (direction === 'asc') {

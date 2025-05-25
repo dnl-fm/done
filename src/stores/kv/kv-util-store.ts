@@ -1,4 +1,4 @@
-export class KvStore {
+export class KvUtilStore {
   constructor(private kv: Deno.Kv) {}
 
   async reset() {

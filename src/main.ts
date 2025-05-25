@@ -1,8 +1,9 @@
 import { Context } from 'hono';
 import { MessageStateManager } from './managers/message-state-manager.ts';
-import { AdminRoutes } from './routes/admin-routes.ts';
+import { KvAdminRoutes } from './routes/kv-admin-routes.ts';
 import { MessageRoutes } from './routes/message-routes.ts';
 import { SystemRoutes } from './routes/system-routes.ts';
+import { TursoAdminRoutes } from './routes/turso-admin-routes.ts';
 import { AuthMiddleware } from './services/auth-middleware.ts';
 import { SystemMessage } from './services/storage/kv-store.ts';
 import { SqliteStore } from './services/storage/sqlite-store.ts';
@@ -12,10 +13,11 @@ import { Routes } from './utils/routes.ts';
 import { Security } from './utils/security.ts';
 import { VERSION_STRING } from './version.ts';
 
-// Initialize message store
+// Initialize stores
 const kv = await Deno.openKv();
 const sqlite = await SqliteStore.create(Deno.env.get('TURSO_DB_URL') || ':memory:', Deno.env.get('TURSO_DB_AUTH_TOKEN') || undefined);
 const messageStore = StoreFactory.getMessagesStore({ kv, sqlite });
+const logsStore = StoreFactory.getLogsStore({ kv, sqlite });
 
 // Initialize Hono with Routes utility
 const hono = Routes.initHono();
@@ -66,9 +68,15 @@ kv.listenQueue(async (incoming: unknown) => {
 // ############################################
 // routes
 
+// Create admin routes based on storage type
+const storageType = StoreFactory.getStorageType();
+const adminRoutes = storageType === 'KV' 
+  ? new KvAdminRoutes(messageStore, logsStore, kv)
+  : new TursoAdminRoutes(messageStore, logsStore, sqlite);
+
 const routes = [
   new MessageRoutes(kv, messageStore),
-  new AdminRoutes(messageStore),
+  adminRoutes,
   new SystemRoutes(),
 ];
 

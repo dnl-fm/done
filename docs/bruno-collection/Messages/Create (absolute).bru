@@ -7,11 +7,15 @@ meta {
 post {
   url: {{url}}/v1/messages/https://done.gotrequests.com/some-user-path/
   body: json
-  auth: none
+  auth: bearer
 }
 
 headers {
   Done-Not-Before: 1700794800
+}
+
+auth:bearer {
+  token: {{token}}
 }
 
 body:json {
