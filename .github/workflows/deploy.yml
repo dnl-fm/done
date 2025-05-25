@@ -38,7 +38,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
+          deno-version: v2.3.3
 
       - name: Run final tests before deployment
         run: deno task test
@@ -108,7 +108,7 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.x
+          deno-version: v2.3.3
 
       - name: Run comprehensive tests before production deployment
         run: |
