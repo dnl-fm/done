@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # Enable version updates for Deno dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    reviewers:
+      - "dnl-fm" # Replace with your GitHub username
+    assignees:
+      - "dnl-fm" # Replace with your GitHub username
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    open-pull-requests-limit: 5
+
+  # Monitor workflow changes
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "dnl-fm"
+    labels:
+      - "dependencies"
+      - "submodule"

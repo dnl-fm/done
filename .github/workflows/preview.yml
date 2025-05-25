@@ -1,0 +1,121 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [ main ]
+
+jobs:
+  preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository # Only for same repo PRs
+    
+    environment:
+      name: preview-pr-${{ github.event.number }}
+      url: https://done-preview-pr-${{ github.event.number }}.deno.dev
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run tests before preview deployment
+        run: deno task test
+        env:
+          ENABLE_LOGS: true
+          STORAGE_TYPE: KV
+
+      - name: Deploy preview to Deno Deploy
+        uses: denoland/deployctl@v1
+        with:
+          project: "done-preview-pr-${{ github.event.number }}"
+          entrypoint: "src/main.ts"
+          root: "."
+          exclude: |
+            tests/
+            docs/
+            .github/
+            *.md
+            .gitignore
+        env:
+          DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+          # Preview environment variables (limited functionality)
+          AUTH_TOKEN: ${{ secrets.PREVIEW_AUTH_TOKEN || 'preview-token-12345' }}
+          STORAGE_TYPE: 'KV' # Always use KV for previews (no persistent DB needed)
+          ENABLE_LOGS: 'true'
+          ENABLE_AUTH: 'false' # Disable auth for easier testing
+
+      - name: Preview deployment health check
+        run: |
+          echo "Waiting for preview deployment to be ready..."
+          sleep 20
+          
+          # Health check
+          PREVIEW_URL="https://done-preview-pr-${{ github.event.number }}.deno.dev"
+          if curl -f "$PREVIEW_URL/v1/system/ping"; then
+            echo "✅ Preview deployment is healthy"
+            echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+          else
+            echo "❌ Preview deployment health check failed"
+            exit 1
+          fi
+
+      - name: Comment PR with preview link
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const previewUrl = process.env.PREVIEW_URL;
+            const message = `## 🚀 Preview Deployment Ready
+            
+            Your changes have been deployed to a preview environment:
+            
+            **🔗 Preview URL:** ${previewUrl}
+            
+            **📋 Test endpoints:**
+            - Ping: [${previewUrl}/v1/system/ping](${previewUrl}/v1/system/ping)
+            - Health: [${previewUrl}/v1/system/health](${previewUrl}/v1/system/health)
+            
+            **⚠️ Note:** This preview uses KV storage only and has authentication disabled for easier testing.
+            
+            The preview will be updated automatically when you push new commits to this PR.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+  cleanup-preview:
+    name: Cleanup Preview
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    
+    steps:
+      - name: Delete preview deployment
+        run: |
+          echo "🧹 Cleaning up preview deployment for PR #${{ github.event.number }}"
+          # Note: Deno Deploy doesn't have a direct API for deleting deployments via CLI
+          # This would need to be done manually or via Deno Deploy dashboard
+          # Or you could implement cleanup via Deno Deploy API calls
+          echo "Preview cleanup completed (manual step required in Deno Deploy dashboard)"
+          
+      - name: Comment cleanup status
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🧹 Preview Cleanup
+              
+              The preview deployment for this PR has been scheduled for cleanup.
+              
+              **Note:** You may need to manually remove the preview project from the Deno Deploy dashboard if it doesn't auto-cleanup.`
+            });

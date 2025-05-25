@@ -1,0 +1,210 @@
+name: Deploy to Deno Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    types: [completed]
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.ref != 'refs/heads/main') ||
+      (github.event_name == 'push' && github.ref != 'refs/heads/main')
+    
+    environment:
+      name: staging
+      url: https://done-staging.deno.dev
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run final tests before deployment
+        run: deno task test
+        env:
+          ENABLE_LOGS: true
+          STORAGE_TYPE: KV
+
+      - name: Deploy to Deno Deploy (Staging)
+        uses: denoland/deployctl@v1
+        with:
+          project: "done-staging" # Your Deno Deploy staging project name
+          entrypoint: "src/main.ts"
+          root: "."
+          exclude: |
+            tests/
+            docs/
+            .github/
+            *.md
+            .gitignore
+        env:
+          DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+          # Staging environment variables
+          AUTH_TOKEN: ${{ secrets.STAGING_AUTH_TOKEN }}
+          TURSO_DB_URL: ${{ secrets.STAGING_TURSO_DB_URL }}
+          TURSO_DB_AUTH_TOKEN: ${{ secrets.STAGING_TURSO_DB_AUTH_TOKEN }}
+          STORAGE_TYPE: ${{ vars.STAGING_STORAGE_TYPE || 'KV' }}
+          ENABLE_LOGS: ${{ vars.STAGING_ENABLE_LOGS || 'true' }}
+          ENABLE_AUTH: ${{ vars.STAGING_ENABLE_AUTH || 'true' }}
+
+      - name: Staging deployment health check
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+          
+          # Health check with retry
+          for i in {1..5}; do
+            if curl -f "https://done-staging.deno.dev/v1/system/ping"; then
+              echo "✅ Staging deployment is healthy"
+              break
+            else
+              echo "⏳ Attempt $i failed, retrying in 10s..."
+              sleep 10
+            fi
+            
+            if [ $i -eq 5 ]; then
+              echo "❌ Staging deployment health check failed"
+              exit 1
+            fi
+          done
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    environment:
+      name: production
+      url: https://done.deno.dev
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Run comprehensive tests before production deployment
+        run: |
+          echo "Running comprehensive test suite..."
+          deno task test
+          
+          echo "Running tests with KV storage..."
+          STORAGE_TYPE=KV deno task test
+          
+          echo "Running tests with Turso storage..."
+          STORAGE_TYPE=TURSO deno task test
+          
+          echo "✅ All tests passed for production deployment"
+        env:
+          ENABLE_LOGS: true
+
+      - name: Deploy to Deno Deploy (Production)
+        uses: denoland/deployctl@v1
+        with:
+          project: "done-production" # Your Deno Deploy production project name
+          entrypoint: "src/main.ts"
+          root: "."
+          exclude: |
+            tests/
+            docs/
+            .github/
+            *.md
+            .gitignore
+            bruno-collection/
+        env:
+          DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+          # Production environment variables
+          AUTH_TOKEN: ${{ secrets.PRODUCTION_AUTH_TOKEN }}
+          TURSO_DB_URL: ${{ secrets.PRODUCTION_TURSO_DB_URL }}
+          TURSO_DB_AUTH_TOKEN: ${{ secrets.PRODUCTION_TURSO_DB_AUTH_TOKEN }}
+          STORAGE_TYPE: ${{ vars.PRODUCTION_STORAGE_TYPE || 'TURSO' }}
+          ENABLE_LOGS: ${{ vars.PRODUCTION_ENABLE_LOGS || 'true' }}
+          ENABLE_AUTH: ${{ vars.PRODUCTION_ENABLE_AUTH || 'true' }}
+
+      - name: Production deployment health check
+        run: |
+          echo "Waiting for production deployment to be ready..."
+          sleep 45
+          
+          # Health check with retry
+          for i in {1..10}; do
+            if curl -f "https://done.deno.dev/v1/system/ping"; then
+              echo "✅ Production deployment is healthy"
+              break
+            else
+              echo "⏳ Attempt $i failed, retrying in 15s..."
+              sleep 15
+            fi
+            
+            if [ $i -eq 10 ]; then
+              echo "❌ Production deployment health check failed"
+              exit 1
+            fi
+          done
+
+      - name: Run post-deployment smoke tests
+        run: |
+          echo "Running post-deployment smoke tests..."
+          
+          # Test system endpoints
+          curl -f "https://done.deno.dev/v1/system/ping" || exit 1
+          
+          # Test with auth (using a test token if available)
+          if [ ! -z "${{ secrets.PRODUCTION_TEST_TOKEN }}" ]; then
+            curl -f -H "Authorization: Bearer ${{ secrets.PRODUCTION_TEST_TOKEN }}" \
+              "https://done.deno.dev/v1/system/health" || exit 1
+          fi
+          
+          echo "✅ Smoke tests passed"
+
+      - name: Notify deployment success
+        run: |
+          echo "🚀 Production deployment successful!"
+          echo "📊 Application metrics will be available at the monitoring dashboard"
+          echo "🔗 API Documentation: https://done.deno.dev/v1/system/ping"
+
+  rollback:
+    name: Emergency Rollback
+    runs-on: ubuntu-latest
+    if: failure() && (github.ref == 'refs/heads/main')
+    needs: [deploy-production]
+    
+    environment:
+      name: production
+      
+    steps:
+      - name: Trigger rollback procedure
+        run: |
+          echo "🚨 EMERGENCY: Production deployment failed!"
+          echo "Manual intervention required for rollback."
+          echo "Contact the on-call engineer immediately."
+          # In a real scenario, you might trigger automatic rollback here
+          # or send alerts to monitoring systems
+          exit 1
