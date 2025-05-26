@@ -96,10 +96,10 @@ export class KvAdminRoutes {
         for await (const entry of entries) {
           if (entry.key[2] !== 'secondaries' && entry.value && typeof entry.value === 'object') {
             const msg = entry.value as Record<string, unknown>;
-            if (msg.status && msg.publish_at) {
+            if (msg.status && typeof msg.status === 'string' && msg.publish_at) {
               messages.push({
                 status: msg.status,
-                publish_at: new Date(msg.publish_at),
+                publish_at: new Date(msg.publish_at as string),
               });
             }
           }

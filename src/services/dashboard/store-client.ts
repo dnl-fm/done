@@ -151,8 +151,8 @@ export class StoreClient {
       if (row.payload) {
         try {
           parsedPayload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
-          url = parsedPayload.url || '';
-          headers = parsedPayload.headers || {};
+          url = typeof parsedPayload.url === 'string' ? parsedPayload.url : '';
+          headers = parsedPayload.headers && typeof parsedPayload.headers === 'object' ? parsedPayload.headers as Record<string, string> : {};
           // Remove url and headers from payload data
           const { url: _, headers: __, ...payloadData } = parsedPayload;
           parsedPayload = payloadData;
@@ -178,7 +178,7 @@ export class StoreClient {
     // Apply status filter if provided
     let filteredMessages = allMessages;
     if (params.status) {
-      filteredMessages = allMessages.filter((msg: { status: string }) => msg.status === params.status.toUpperCase());
+      filteredMessages = allMessages.filter((msg: { status: string }) => msg.status === params.status!.toUpperCase());
     }
 
     // Apply pagination
