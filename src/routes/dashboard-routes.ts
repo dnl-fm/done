@@ -82,7 +82,7 @@ export class DashboardRoutes {
       });
     </script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-30 min-h-screen">
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <a href="/dashboard">
           <div class="flex items-center gap-4 mb-6">
