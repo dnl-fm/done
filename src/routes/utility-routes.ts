@@ -151,23 +151,60 @@ export class UtilityRoutes {
               } else if (statusRoll < 0.92) {
                 status = 'DLQ'; // 7% to DLQ (no FAILED status)
                 retryCount = 3;
-                lastErrors.push({
-                  timestamp: new Date(Date.now() - 3600000).toISOString(),
-                  error: 'Connection timeout',
-                });
+                // Add multiple realistic errors for DLQ messages
+                lastErrors.push(
+                  {
+                    timestamp: new Date(Date.now() - 7200000).toISOString(),
+                    error: 'HTTP 500: Internal Server Error - The webhook endpoint returned an error',
+                  },
+                  {
+                    timestamp: new Date(Date.now() - 5400000).toISOString(),
+                    error: 'HTTP 503: Service Unavailable - The service is temporarily unavailable',
+                  },
+                  {
+                    timestamp: new Date(Date.now() - 3600000).toISOString(),
+                    error: 'Connection timeout after 30 seconds - The remote server did not respond',
+                  },
+                );
               } else if (statusRoll < 0.95) {
                 status = 'DLQ'; // 3% dead letter queue
                 retryCount = 5;
-                lastErrors.push({
-                  timestamp: new Date(Date.now() - 7200000).toISOString(),
-                  error: 'Max retries exceeded',
-                });
+                // Add progression of errors leading to DLQ
+                lastErrors.push(
+                  {
+                    timestamp: new Date(Date.now() - 14400000).toISOString(),
+                    error: 'HTTP 404: Not Found - The webhook endpoint does not exist',
+                  },
+                  {
+                    timestamp: new Date(Date.now() - 10800000).toISOString(),
+                    error: 'HTTP 404: Not Found - The webhook endpoint does not exist',
+                  },
+                  {
+                    timestamp: new Date(Date.now() - 7200000).toISOString(),
+                    error: 'HTTP 404: Not Found - The webhook endpoint does not exist',
+                  },
+                  {
+                    timestamp: new Date(Date.now() - 3600000).toISOString(),
+                    error: 'HTTP 404: Not Found - The webhook endpoint does not exist',
+                  },
+                  {
+                    timestamp: new Date(Date.now() - 1800000).toISOString(),
+                    error: 'Max retries exceeded - Message moved to dead letter queue',
+                  },
+                );
               } else if (statusRoll < 0.98) {
                 status = 'RETRY'; // 3% retrying
                 retryCount = Math.floor(Math.random() * 3) + 1;
+                // Add recent error for retry status
+                const errorTypes = [
+                  'HTTP 502: Bad Gateway - The server received an invalid response',
+                  'HTTP 503: Service Unavailable - The service is temporarily down for maintenance',
+                  'Connection reset by peer - The remote server closed the connection unexpectedly',
+                  'HTTP 429: Too Many Requests - Rate limit exceeded',
+                ];
                 lastErrors.push({
-                  timestamp: new Date(Date.now() - 1800000).toISOString(),
-                  error: 'Service unavailable',
+                  timestamp: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
+                  error: errorTypes[Math.floor(Math.random() * errorTypes.length)],
                 });
               } else {
                 status = 'QUEUED'; // 2% still queued
