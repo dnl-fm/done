@@ -19,14 +19,15 @@ __Key features:__
 
 - [Introduction](#introduction)
 - [Storage](#storage)
-- [What about Deno's native queue?](#what-about-denos-native-queue)
 - [Quick Start](#quick-start)
+- [Messages](#messages)
 - [Setup on Deno Deploy](#setup-on-deno-deploy)
 - [API Endpoints](#api-endpoints)
   - [Core Message Operations](#core-message-operations)
   - [Administrative & Monitoring Tools](#administrative--monitoring-tools)
   - [Testing & Development](#testing--development)
   - [Expected API Responses](#expected-api-responses)
+- [What about Deno's native queue?](#what-about-denos-native-queue)
 - [Credits](#credits)
 - [Who is DNL](#who-is-dnl)
 - [Feedback](#feedback)
@@ -155,6 +156,8 @@ curl -X POST 'http://localhost:3001/v1/https://httpbin.org/post' \
 ```
 
 Ready to deploy? Check out the [Setup on Deno Deploy](#setup-on-deno-deploy) section below! 🚀
+
+## Messages
 
 ### Absolute Delay
 
@@ -338,18 +341,6 @@ await fetch('https://your-done-host.com/http://your-callback-url.com/some-path/1
 });
 ```
 
-## What about Deno's native Queue?
-
-[Deno's native queue](https://deno.com/blog/queues) is super handy for instant action in your Deno Deploy projects, like firing emails or sending requests on the fly. But when it comes to tracking those enqueued little critters, it's like herding cats. You'd have to play double duty, shuffling each message into a KV store and keeping tabs on their every move. Thinking of delaying a message? You've got a week, max. That's it.
-
-Enter Done - your new best bud in the messaging realm. This isn't just another tool; it's a developer's dream sidekick _\*cough\*_. Picture it stepping out of Deno's shadow, ready to serve any app, anywhere. Done keeps an eagle eye on all messages and their states, making callbacks with custom headers to any external service like it's no big deal.
-
-And when it comes to delays, Done laughs in the face of 7-day limits. Whether you're plotting to send a "see you in two months" email or scheduling an invoice way down the line, Done's your time-traveling ally. No delay cap, just boundless possibilities.
-
-So, here's the deal: Done is unapologetically developer-friendly. No complicated setups, no riddles to solve. It's as transparent and straightforward as it gets. Just the way you like it.
-
-__P.S. Big shoutout to the Deno team! Without Deno Queues and Deno KV, this tool would've been a no-go. Huge thanks for their fantastic work – couldn't have done it without them!__ 🙌🦕
-
 ## Setup on Deno Deploy
 
 ### 1. Create Your Deno Deploy Project
@@ -519,6 +510,18 @@ All endpoints are documented as a [Bruno collection](docs/bruno-collection/) wit
 ```
 
 These endpoints give you complete visibility into your message queue operations - perfect for monitoring, debugging, and understanding your application's messaging patterns! 🔍
+
+## What about Deno's native Queue?
+
+[Deno's native queue](https://deno.com/blog/queues) is super handy for instant action in your Deno Deploy projects, like firing emails or sending requests on the fly. But when it comes to tracking those enqueued little critters, it's like herding cats. You'd have to play double duty, shuffling each message into a KV store and keeping tabs on their every move. Thinking of delaying a message? You've got a week, max. That's it.
+
+Enter Done - your new best bud in the messaging realm. This isn't just another tool; it's a developer's dream sidekick _\*cough\*_. Picture it stepping out of Deno's shadow, ready to serve any app, anywhere. Done keeps an eagle eye on all messages and their states, making callbacks with custom headers to any external service like it's no big deal.
+
+And when it comes to delays, Done laughs in the face of 7-day limits. Whether you're plotting to send a "see you in two months" email or scheduling an invoice way down the line, Done's your time-traveling ally. No delay cap, just boundless possibilities.
+
+So, here's the deal: Done is unapologetically developer-friendly. No complicated setups, no riddles to solve. It's as transparent and straightforward as it gets. Just the way you like it.
+
+__P.S. Big shoutout to the Deno team! Without Deno Queues and Deno KV, this tool would've been a no-go. Huge thanks for their fantastic work – couldn't have done it without them!__ 🙌🦕
 
 ## Credits
 
