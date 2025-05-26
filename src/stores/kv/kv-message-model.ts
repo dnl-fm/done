@@ -1,12 +1,4 @@
-export enum MESSAGE_STATUS {
-  CREATED = 'CREATED',
-  QUEUED = 'QUEUED',
-  DELIVER = 'DELIVER',
-  SENT = 'SENT',
-  RETRY = 'RETRY',
-  DLQ = 'DLQ',
-  ARCHIVED = 'ARCHIVED',
-}
+export type MESSAGE_STATUS = 'CREATED' | 'QUEUED' | 'DELIVER' | 'SENT' | 'RETRY' | 'DLQ' | 'ARCHIVED';
 
 export type MessagePayload = {
   headers: {
@@ -19,7 +11,7 @@ export type MessagePayload = {
 
 export type MessageReceivedData = {
   id: string;
-  publishAt: Date;
+  publish_at: Date;
   payload: MessagePayload;
 };
 
@@ -27,21 +19,21 @@ export type MessageLastError = {
   url: string;
   status?: number;
   message: string;
-  createdAt: Date;
+  created_at: Date;
 };
 
 export type MessageData = {
   payload: MessagePayload;
-  publishAt: Date;
-  deliveredAt?: Date;
-  retryAt?: Date;
+  publish_at: Date;
+  delivered_at?: Date;
+  retry_at?: Date;
   retried?: number;
   status: MESSAGE_STATUS;
-  lastErrors?: MessageLastError[];
+  last_errors?: MessageLastError[];
 };
 
 export type MessageModel = MessageData & {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 };

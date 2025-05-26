@@ -1,16 +1,22 @@
 {
   "imports": {
-    "hono": "jsr:@hono/hono@4.7.4",
-    "zod": "npm:zod@3.24.2",
-    "zod-validator": "npm:@hono/zod-validator@0.4.3",
-    "result": "npm:neverthrow@6.1.0",
-    "ulid": "npm:ulid@2.3.0",
+    "hono": "jsr:@hono/hono@4.7.10",
+    "zod": "npm:zod@^3.25.0",
+    "zod-validator": "npm:@hono/zod-validator@0.5.0",
+    "result": "npm:neverthrow@8.2.0",
+    "ulid": "npm:ulid@3.0.0",
     "generate-unique-id": "npm:generate-unique-id@2.0.3",
-    "deep-object-diff": "npm:deep-object-diff@1.1.9"
+    "deep-object-diff": "npm:deep-object-diff@1.1.9",
+    "@libsql/client": "npm:@libsql/client@0.15.7",
+    "libsql-core": "npm:@libsql/core@0.15.7/api",
+    "libsql-node": "npm:@libsql/client@0.15.7/node",
+    "libsql-web": "npm:@libsql/client@0.15.7/web"
   },
   "tasks": {
     "dev": "deno run -A --env=.env.local --watch --unstable-kv --unstable-cron src/main.ts",
-    "clean": "deno fmt -q && deno lint ./src"
+    "start": "deno run -A --unstable-kv --unstable-cron src/main.ts",
+    "clean": "deno fmt -q && deno lint ./src",
+    "test": "deno test -A --unstable-kv tests/"
   },
   "lint": {
     "include": [

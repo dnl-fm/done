@@ -34,10 +34,36 @@ Done isn't just another message queue service; it's a celebration of simplicity 
 Embrace the open-source simplicity with Done. Queue up, have fun, and get it done! 
 
 - 📡 RESTful API, Joyful You: Manage your queues with a RESTful API that's as simple as a light switch – on, off, and awesome.
-- 🧰 No-Frills, All Thrills: We’ve cut the fluff, leaving you with a lean, mean, message-queuing machine.
+- 🧰 No-Frills, All Thrills: We've cut the fluff, leaving you with a lean, mean, message-queuing machine.
 - 🦕 Deno-Deploy-Powered: With its foundation in Deno, Done is as awesome as a dinosaur rocking shades. That's right, we're keeping it that cool ;)
 
 ## Features
+
+### Storage Options
+
+Done supports two fantastic storage backends (because choices are awesome!):
+
+1. **Deno KV (Default)**: Uses Deno's built-in key-value store for all data storage - it's simple, fast, and plays beautifully with Deno Deploy! 🦕
+2. **Turso**: Stores data in SQLite (locally for development) or Turso's distributed SQLite service (for production) - when you need that SQL flexibility and want to scale like a boss! 🚀
+
+Each storage backend is lovingly crafted with its own specialized implementation:
+- **KV Storage**: Uses a key-value model with secondary indexes for lightning-fast lookups - it's like having a perfectly organized digital filing cabinet! 📁
+- **Turso Storage**: Leverages SQL's native query superpowers for efficient data retrieval and manipulation - because sometimes you need that SQL muscle! 💪
+
+To configure the storage backend, set the following environment variables:
+
+```
+# Choose storage type: 'KV' or 'TURSO' 
+STORAGE_TYPE=KV  # Default is 'KV' if not specified
+
+# For Turso storage
+TURSO_DB_URL=https://your-db.turso.io  # Optional: defaults to local SQLite file if not provided
+TURSO_AUTH_TOKEN=your-auth-token       # Optional: only needed for Turso cloud
+```
+
+For local development with Turso, you've got options! Use an in-memory database by setting `TURSO_DB_URL=:memory:` (perfect for testing - it's like having a scratch pad that vanishes when you're done) or a local file with `TURSO_DB_URL=file:turso.db` (when you want persistence without the cloud).
+
+Want to switch between storage types? Just update that `STORAGE_TYPE` env variable - it's like having a storage Swiss Army knife at your fingertips! 🔄 Whether you're team KV or team Turso, Done's got your back. 🎯
 
 ### Absolute Delay
 
@@ -60,7 +86,7 @@ You will receive a message-id as well as the set date of callback.
 
 {
   "id": "msg_ytc6tbklsjmurie7ppxtqfnreh",
-  "publishAt": "2023-11-25T09:00:00Z"
+  "publish_at": "2023-11-25T09:00:00Z"
 }
 ```
 __Expected callback at `2023-11-25T09:00:00Z`__
@@ -102,7 +128,7 @@ You will receive a message-id as well as the calculated date of callback.
 
 {
   "id": "msg_ytc6tbklsjmurie7ppxtqfnreh",
-  "publishAt": "2023-11-25T09:05:00Z"
+  "publish_at": "2023-11-25T09:05:00Z"
 }
 ```
 __Expected callback at `2023-11-25T09:05:00Z`__
@@ -156,7 +182,7 @@ You will receive a message-id as well as the calculated date of callback.
 
 {
   "id": "msg_ytc6tbklsjmurie7ppxtqfnreh",
-  "publishAt": "2023-11-25T09:00:00Z"
+  "publish_at": "2023-11-25T09:00:00Z"
 }
 ```
 __Expected callback immediate after `2023-11-25T09:00:00Z`__

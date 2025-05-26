@@ -1,73 +1,98 @@
-import { Context, Hono } from 'hono';
 import { z } from 'zod';
-import { VERSION } from '../main.ts';
-import { MESSAGE_STATUS, MessagePayload, MessageReceivedData } from '../stores/message-model.ts';
-import { MESSAGES_STORE_NAME, MessagesStore } from '../stores/messages-store.ts';
+import { MessagesStoreInterface } from '../interfaces/messages-store-interface.ts';
+import { MessageReceivedDataSchema, MessageReceivedResponseSchema, MessageStatusSchema } from '../schemas/message-schema.ts';
+import { SYSTEM_MESSAGE_TYPE, SystemMessage } from '../services/storage/kv-store.ts';
+import { MESSAGES_STORE_NAME } from '../stores/kv/kv-messages-store.ts';
 import { Http } from '../utils/http.ts';
+import { Routes } from '../utils/routes.ts';
 import { Security } from '../utils/security.ts';
-import { SYSTEM_MESSAGE_TYPE, SystemMessage } from '../utils/store.ts';
 
-export const messageRoutes = (router: Hono, kv: Deno.Kv) => {
-  const store = new MessagesStore(kv);
-  const baseRouter = router.basePath(`/${VERSION}/messages`);
+/**
+ * Handles routing for message-related endpoints.
+ */
+export class MessageRoutes {
+  private basePath = `/messages`;
+  private routes = Routes.initHono({ basePath: this.basePath });
 
-  baseRouter.get('/:id', async (ctx: Context) => {
-    const id = ctx.req.param('id');
-    const result = await store.fetch(id);
+  /**
+   * Creates a new MessageRoutes instance.
+   * @param {Deno.Kv} kv - The key-value store instance.
+   * @param {MessagesStoreInterface} messageStore - The message store implementation.
+   */
+  constructor(
+    private readonly kv: Deno.Kv,
+    private readonly messageStore: MessagesStoreInterface,
+  ) {}
 
-    if (result.isErr()) {
-      return ctx.json({ error: result.error }, 404);
-    }
+  /**
+   * Gets the versioned base path for message routes.
+   * @param {string} version - API version string.
+   * @returns {string} The complete base path including version.
+   */
+  getBasePath(version: string) {
+    return `/${version}/${this.basePath.replace('/', '')}`;
+  }
 
-    return ctx.json(result.value);
-  });
+  getRoutes() {
+    this.routes.get('/:id', async (c) => {
+      const id = c.req.param('id');
+      const result = await this.messageStore.fetchOne(id);
 
-  baseRouter.get('/by-status/:status', async (ctx: Context) => {
-    const status = ctx.req.param('status');
-    const statusZod = z.object({ status: z.nativeEnum(MESSAGE_STATUS) });
-    const validate = statusZod.safeParse({ status: status.toUpperCase() });
+      if (result.isErr()) {
+        return c.json({ error: result.error }, 404);
+      }
 
-    if (!validate.success) {
-      return ctx.json({ error: `Unknown status ${status}` }, 400);
-    }
+      return c.json(result.value);
+    });
 
-    const result = await store.fetchByStatus(validate.data.status);
+    this.routes.get('/by-status/:status', async (c) => {
+      const status = c.req.param('status');
+      const validate = MessageStatusSchema.safeParse(status.toUpperCase());
 
-    if (result.isErr()) {
-      return ctx.json({ error: result.error }, 404);
-    }
+      if (!validate.success) {
+        return c.json({ error: `Unknown status ${status}` }, 400);
+      }
 
-    return ctx.json(result.value);
-  });
+      const result = await this.messageStore.fetchByStatus(validate.data);
 
-  baseRouter.post('/:url{.*?}', async (ctx: Context) => {
-    const nextId = store.buildModelIdWithPrefix();
-    const callbackUrl = ctx.req.param('url');
-    const publishAtDate = Http.delayExtract(ctx);
-    const headers = Http.extractHeaders(ctx);
+      if (result.isErr()) {
+        return c.json({ error: result.error }, 404);
+      }
 
-    const message = {
-      id: Security.generateSortableId(),
-      type: SYSTEM_MESSAGE_TYPE.MESSAGE_RECEIVED,
-      object: MESSAGES_STORE_NAME,
-      data: {
-        id: nextId,
-        publishAt: publishAtDate,
-        payload: {
-          headers,
-          url: callbackUrl,
-          data: Http.isJson(ctx) ? await ctx.req.json() : undefined,
-        } as MessagePayload,
-      } as MessageReceivedData,
-      createdAt: new Date(),
-    } as SystemMessage;
+      return c.json(result.value);
+    });
 
-    console.log(`[${new Date().toISOString()}] enqueue new message`, message.data);
+    this.routes.post('/:url{.*?}', async (c) => {
+      const nextId = this.messageStore.buildModelIdWithPrefix();
+      const callbackUrl = c.req.param('url');
+      const publishAtDate = Http.delayExtract(c);
+      const headers = Http.extractHeaders(c);
 
-    const result = await kv.enqueue(message);
+      const message = {
+        id: Security.generateSortableId(),
+        type: SYSTEM_MESSAGE_TYPE.MESSAGE_RECEIVED,
+        object: MESSAGES_STORE_NAME,
+        data: {
+          id: nextId,
+          publish_at: publishAtDate,
+          payload: {
+            headers,
+            url: callbackUrl,
+            data: Http.isJson(c) ? await c.req.json() : undefined,
+          },
+        } as z.infer<typeof MessageReceivedDataSchema>,
+        created_at: new Date(),
+      } as SystemMessage;
 
-    console.log(`[${new Date().toISOString()}] result enqueued`, result);
+      console.log(`[${new Date().toISOString()}] enqueue new message`, message.data);
 
-    return ctx.json({ id: nextId, publishAt: publishAtDate.toISOString() }, 201);
-  });
-};
+      await this.kv.enqueue(message);
+
+      console.log(`[${new Date().toISOString()}] message enqueued with id ${nextId}`);
+
+      return c.json({ id: nextId, publish_at: publishAtDate.toISOString() } as z.infer<typeof MessageReceivedResponseSchema>, 201);
+    });
+
+    return this.routes;
+  }
+}

@@ -1,14 +1,5 @@
 import { diff } from 'deep-object-diff';
-import { Security } from './security.ts';
-
-export type HasDates = {
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type Model = HasDates & {
-  id: string;
-};
+import { Security } from '../../utils/security.ts';
 
 export enum SYSTEM_MESSAGE_TYPE {
   STORE_CREATE_EVENT = 'STORE_CREATE_EVENT',
@@ -19,19 +10,12 @@ export enum SYSTEM_MESSAGE_TYPE {
   MESSAGE_RETRY = 'MESSAGE_RETRY',
 }
 
-export enum SYSTEM_MESSAGE_STATUS {
-  CREATED = 'CREATED',
-  RECEIVED = 'RECEIVED',
-  PROCESSED = 'PROCESSED',
-  IGNORE = 'IGNORE',
-}
-
 export type SystemMessage = {
   id: string;
   type: SYSTEM_MESSAGE_TYPE;
   data: unknown;
   object: string;
-  createdAt: Date;
+  created_at: Date;
 };
 
 export enum SECONDARY_TYPE {
@@ -45,22 +29,39 @@ export type Secondary = {
   value?: string[];
 };
 
-export abstract class Store {
+/**
+ * Abstract base class for key-value store operations.
+ * Provides common functionality for storing and retrieving data using Deno.Kv.
+ */
+export abstract class KvStore {
   constructor(protected kv: Deno.Kv) {}
 
+  /**
+   * Gets the name of the store.
+   * @returns {string} The store name.
+   */
   abstract getStoreName(): string;
+
+  /**
+   * Gets the prefix used for model IDs in this store.
+   * @returns {string} The model ID prefix.
+   */
   abstract getModelIdPrefix(): string;
 
+  /**
+   * Generates a unique log ID with a sortable timestamp.
+   * @returns {string} A unique log ID in the format "log_[sortableId]".
+   */
   static buildLogId() {
     return `log_${Security.generateSortableId()}`;
   }
 
   static buildLogKey(logId: string) {
-    return [...Store.getStoresBaseKey(), 'logging', logId];
+    return [...KvStore.getStoresBaseKey(), 'logging', logId];
   }
 
   static buildLogSecondaryKey(messageId: string) {
-    return [...Store.getStoresBaseKey(), 'logging', 'secondaries', 'BY_MESSAGE_ID', messageId];
+    return [...KvStore.getStoresBaseKey(), 'logging', 'secondaries', 'BY_MESSAGE_ID', messageId];
   }
 
   static getStoresBaseKey() {
@@ -68,9 +69,13 @@ export abstract class Store {
   }
 
   static getCollectionBaseSecondaryKey() {
-    return [...Store.getStoresBaseKey(), 'secondary'];
+    return [...KvStore.getStoresBaseKey(), 'secondary'];
   }
 
+  /**
+   * Generates a unique model ID.
+   * @returns {string} A unique model identifier.
+   */
   buildModelId() {
     return Security.generateId();
   }
@@ -79,11 +84,23 @@ export abstract class Store {
     return `${this.getModelIdPrefix().toLowerCase()}_${this.buildModelId()}`;
   }
 
+  /**
+   * Gets secondary indices for a given model.
+   * Override this method to implement custom secondary indices.
+   * @param {unknown} model - The model to get secondaries for.
+   * @returns {Secondary[]} Array of secondary indices.
+   */
   // deno-lint-ignore no-unused-vars
   getSecondaries(model: unknown): Secondary[] {
     return [];
   }
 
+  /**
+   * Fetches multiple models by their IDs.
+   * @template Type The type of models to fetch.
+   * @param {string[]} ids - Array of model IDs to fetch.
+   * @returns {Promise<Type[]>} Array of fetched models, sorted by updated_at.
+   */
   async fetchMany<Type>(ids: string[]) {
     const models: Type[] = [];
 
@@ -95,11 +112,11 @@ export abstract class Store {
       }
     }
 
-    return this.sortByUpdatedAt(models as HasDates[]) as Type[];
+    return this.sortByUpdatedAt(models as Array<{ updated_at: Date }>) as Type[];
   }
 
-  sortByUpdatedAt<Type>(models: HasDates[], direction: 'asc' | 'desc' = 'desc') {
-    models.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  sortByUpdatedAt<Type>(models: Array<{ updated_at: Date }>, direction: 'asc' | 'desc' = 'desc') {
+    models.sort((a, b) => b.updated_at.getTime() - a.updated_at.getTime());
 
     if (direction === 'asc') {
       models.reverse();
@@ -136,13 +153,20 @@ export abstract class Store {
     return this.kv.list<Type>({ prefix: this.buildPrimaryKey() }, options);
   }
 
+  /**
+   * Creates a new model in the store.
+   * @template Type The type of model to create.
+   * @param {object} data - The data to create the model with.
+   * @param {object} [options] - Optional creation options.
+   * @param {string} [options.withId] - Specific ID to use for the new model.
+   * @returns {Promise<Type>} The created model.
+   */
   protected async _create<Type>(data: object, options?: { withId: string }) {
     const id = options?.withId || this.buildModelIdWithPrefix();
-    const model = { id, ...data, createdAt: new Date(), updatedAt: new Date() };
+    const model = { id, ...data, created_at: new Date(), updated_at: new Date() };
     await this.kv.set(this.buildPrimaryKey(model.id), model);
 
     // HANDLE SECONDARIES
-
     for (const secondary of this.getSecondaries(model)) {
       secondary.value = secondary.value || [model.id];
 
@@ -159,6 +183,14 @@ export abstract class Store {
     return model as Type;
   }
 
+  /**
+   * Updates an existing model in the store.
+   * @template Type The type of model to update.
+   * @param {string} id - The ID of the model to update.
+   * @param {Partial<Type>} data - The data to update the model with.
+   * @returns {Promise<Type>} The updated model.
+   * @throws {Error} If the model is not found.
+   */
   protected async _update<Type>(id: string, data: Partial<Type>) {
     const before = await this._fetch<Type>(id);
 
@@ -166,11 +198,10 @@ export abstract class Store {
       throw new Error(`model not found ${id}`);
     }
 
-    const after = { ...before, ...data, updatedAt: new Date() };
+    const after = { ...before, ...data, updated_at: new Date() };
     await this.kv.set(this.buildPrimaryKey(id), after);
 
     // HANDLE SECONDARIES
-
     const secondariesWithOldData = this.getSecondaries(before);
 
     for (const [index, secondary] of Object.entries(this.getSecondaries(after))) {
@@ -205,12 +236,18 @@ export abstract class Store {
     return entry.value;
   }
 
-  protected cast<Type>(data: Omit<Type, 'id' | 'createdAt' | 'updatedAt'>): Omit<Type, 'id' | 'createdAt' | 'updatedAt'> {
+  /**
+   * Casts data to the specified type, preserving only the data fields.
+   * @template Type The type to cast to.
+   * @param {Omit<Type, 'id' | 'created_at' | 'updated_at'>} data - The data to cast.
+   * @returns {Omit<Type, 'id' | 'created_at' | 'updated_at'>} The cast data.
+   */
+  protected cast<Type>(data: Omit<Type, 'id' | 'created_at' | 'updated_at'>): Omit<Type, 'id' | 'created_at' | 'updated_at'> {
     return data;
   }
 
   protected buildPrimaryKey(id?: string) {
-    const keys = [...Store.getStoresBaseKey(), this.getStoreName()];
+    const keys = [...KvStore.getStoresBaseKey(), this.getStoreName()];
 
     if (id) {
       keys.push(id);
@@ -282,7 +319,7 @@ export abstract class Store {
   }
 
   private async triggerWriteEvent(type: SYSTEM_MESSAGE_TYPE, data: { before?: unknown; after?: unknown }) {
-    const log: SystemMessage = { type, data, id: Store.buildLogId(), object: this.getStoreName(), createdAt: new Date() };
+    const log: SystemMessage = { type, data, id: KvStore.buildLogId(), object: this.getStoreName(), created_at: new Date() };
 
     // ##############################################
     // enqueue message
@@ -309,10 +346,10 @@ export abstract class Store {
     }
 
     // save log
-    await this.kv.set(Store.buildLogKey(log.id), log);
+    await this.kv.set(KvStore.buildLogKey(log.id), log);
 
     // add secondary to lookup logs by message id
-    const secondaryKey = Store.buildLogSecondaryKey(messageId);
+    const secondaryKey = KvStore.buildLogSecondaryKey(messageId);
     const values = await this.kv.get<string[]>(secondaryKey);
     await this.kv.set(secondaryKey, Array.isArray(values.value) ? [...values.value, log.id] : [log.id]);
   }

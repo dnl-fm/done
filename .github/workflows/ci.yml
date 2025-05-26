@@ -1,0 +1,175 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pull-requests: write # For PR comments
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.3.3
+
+      - name: Verify Deno installation
+        run: deno --version
+
+      - name: Cache Deno dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/deno
+            ~/.deno
+          key: ${{ runner.os }}-deno-${{ hashFiles('**/deno.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deno-
+
+      - name: Check formatting
+        run: deno fmt --check
+
+      - name: Run linter
+        run: deno lint
+
+      - name: Type check
+        run: deno check src/main.ts
+
+      - name: Run tests
+        run: deno task test
+        env:
+          # Enable logs for testing
+          ENABLE_LOGS: true
+          # Use KV storage for CI to avoid libsql native binary issues
+          STORAGE_TYPE: KV
+          
+      - name: Generate test coverage (if available)
+        run: |
+          if deno task coverage 2>/dev/null; then
+            echo "Coverage report generated"
+          else
+            echo "No coverage task defined, skipping"
+          fi
+        continue-on-error: true
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.3.3
+
+      - name: Security audit
+        run: |
+          # Check for common security issues
+          echo "Checking for hardcoded secrets..."
+          if grep -r -E "(password|secret|api_?key|auth_?token|private_?key)\s*[=:]\s*['\"][^'\"]{8,}" src/ --include="*.ts" --exclude-dir=node_modules | grep -v "placeholder\|example\|test\|TODO\|foreign_keys\|PRAGMA"; then
+            echo "❌ Potential hardcoded secrets found"
+            exit 1
+          else
+            echo "✅ No hardcoded secrets detected"
+          fi
+
+      - name: Dependency vulnerability check
+        run: |
+          echo "Checking dependencies for known vulnerabilities..."
+          # This will be enhanced when Deno gets better tooling for this
+          deno info src/main.ts > /dev/null
+          echo "✅ Dependencies check completed"
+
+  validate-api:
+    name: API Validation
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.3.3
+
+      - name: Start application
+        run: |
+          deno task start &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          
+          # Wait for app to start
+          sleep 5
+          
+          # Basic health check
+          if curl -f http://localhost:3001/v1/system/ping; then
+            echo "✅ Application started successfully"
+          else
+            echo "❌ Application failed to start"
+            kill $APP_PID 2>/dev/null || true
+            exit 1
+          fi
+          
+          kill $APP_PID 2>/dev/null || true
+        timeout-minutes: 2
+        env:
+          # Use in-memory database for API validation
+          TURSO_DB_URL: ":memory:"
+          STORAGE_TYPE: KV
+          ENABLE_LOGS: true
+
+  notify:
+    name: Notify Status
+    runs-on: ubuntu-latest
+    needs: [test, security, validate-api]
+    if: always()
+    
+    permissions:
+      contents: read
+      pull-requests: write # For PR comments
+      issues: write # For issue comments
+    
+    steps:
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.test.result }}" == "success" && "${{ needs.security.result }}" == "success" && "${{ needs.validate-api.result }}" == "success" ]]; then
+            echo "✅ All checks passed! Ready for deployment."
+            echo "STATUS=success" >> $GITHUB_ENV
+          else
+            echo "❌ Some checks failed. Please review before merging."
+            echo "STATUS=failure" >> $GITHUB_ENV
+            exit 1
+          fi
+
+      - name: Comment PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = process.env.STATUS;
+            const message = status === 'success' 
+              ? '✅ All CI checks passed! This PR is ready for review and merge.'
+              : '❌ Some CI checks failed. Please fix the issues before merging.';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## CI Status Report\n\n${message}\n\n**Test Results:**\n- Tests: ${{ needs.test.result }}\n- Security: ${{ needs.security.result }}\n- API Validation: ${{ needs.validate-api.result }}`
+            });

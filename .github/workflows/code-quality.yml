@@ -1,0 +1,191 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, 'feature/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v2.3.3
+
+      - name: Check code formatting
+        run: |
+          echo "🎨 Checking code formatting..."
+          if ! deno fmt --check; then
+            echo "❌ Code formatting issues found. Run 'deno fmt' to fix."
+            exit 1
+          fi
+          echo "✅ Code formatting is correct"
+
+      - name: Run linter
+        run: |
+          echo "🔍 Running linter..."
+          if ! deno lint; then
+            echo "❌ Linting issues found. Please fix the issues above."
+            exit 1
+          fi
+          echo "✅ No linting issues found"
+
+      - name: Type checking
+        run: |
+          echo "🔬 Running type checks..."
+          if ! deno check src/main.ts; then
+            echo "❌ TypeScript type checking failed."
+            exit 1
+          fi
+          echo "✅ Type checking passed"
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "📝 Checking for TODO/FIXME comments..."
+          todos=$(grep -r "TODO\|FIXME\|XXX\|HACK" src/ tests/ --include="*.ts" || true)
+          if [ ! -z "$todos" ]; then
+            echo "⚠️ Found TODO/FIXME comments:"
+            echo "$todos"
+            echo ""
+            echo "Consider addressing these before merging to main."
+          else
+            echo "✅ No TODO/FIXME comments found"
+          fi
+
+      - name: Check import organization
+        run: |
+          echo "📦 Checking import organization..."
+          # Check for relative imports that could be absolute
+          relative_imports=$(grep -r "from '\.\./\.\." src/ --include="*.ts" || true)
+          if [ ! -z "$relative_imports" ]; then
+            echo "⚠️ Found deeply nested relative imports:"
+            echo "$relative_imports"
+            echo "Consider using absolute imports for better maintainability."
+          fi
+
+      - name: Dependency analysis
+        run: |
+          echo "🔗 Analyzing dependencies..."
+          deno info src/main.ts --json > deps.json
+          
+          # Count total dependencies
+          deps_count=$(cat deps.json | grep -o '"specifier"' | wc -l)
+          echo "📊 Total dependencies: $deps_count"
+          
+          # Check for unstable APIs
+          unstable_apis=$(grep -r "Deno\..*" src/ --include="*.ts" | grep -v "Deno.env\|Deno.serve\|Deno.openKv\|Deno.cron" || true)
+          if [ ! -z "$unstable_apis" ]; then
+            echo "⚠️ Found potentially unstable Deno APIs:"
+            echo "$unstable_apis"
+          fi
+          
+          rm -f deps.json
+
+      - name: Code complexity check
+        run: |
+          echo "🧮 Checking code complexity..."
+          # Simple complexity check - count deeply nested functions
+          complex_files=$(find src/ -name "*.ts" -exec grep -l "function.*{.*function.*{.*function.*{" {} \; || true)
+          if [ ! -z "$complex_files" ]; then
+            echo "⚠️ Found potentially complex files with deep nesting:"
+            echo "$complex_files"
+            echo "Consider refactoring for better maintainability."
+          else
+            echo "✅ No overly complex files detected"
+          fi
+
+      - name: Security scan
+        run: |
+          echo "🔒 Running basic security scan..."
+          
+          # Check for potential security issues
+          security_issues=""
+          
+          # Check for eval usage
+          eval_usage=$(grep -r "eval(" src/ --include="*.ts" || true)
+          if [ ! -z "$eval_usage" ]; then
+            security_issues="$security_issues\n❌ Found eval() usage (potential security risk)"
+          fi
+          
+          # Check for innerHTML usage
+          innerHTML_usage=$(grep -r "innerHTML" src/ --include="*.ts" || true)
+          if [ ! -z "$innerHTML_usage" ]; then
+            security_issues="$security_issues\n⚠️ Found innerHTML usage (potential XSS risk)"
+          fi
+          
+          # Check for console.log in production code
+          console_logs=$(grep -r "console\.log\|console\.error\|console\.warn" src/ --include="*.ts" --exclude="**/utils/logger.ts" || true)
+          if [ ! -z "$console_logs" ]; then
+            security_issues="$security_issues\n⚠️ Found console statements in source code"
+          fi
+          
+          if [ ! -z "$security_issues" ]; then
+            echo "Security scan results:"
+            echo -e "$security_issues"
+          else
+            echo "✅ Basic security scan passed"
+          fi
+
+  documentation:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check README exists and is updated
+        run: |
+          if [ ! -f README.md ]; then
+            echo "❌ README.md not found"
+            exit 1
+          fi
+          
+          # Check if README was updated recently (within last 30 commits)
+          readme_updated=$(git log --oneline -30 --name-only | grep README.md || true)
+          if [ -z "$readme_updated" ]; then
+            echo "⚠️ README.md hasn't been updated in the last 30 commits"
+            echo "Consider updating documentation when adding new features."
+          else
+            echo "✅ README.md is being maintained"
+          fi
+
+      - name: Check API documentation
+        run: |
+          echo "📚 Checking API documentation..."
+          
+          # Check if Bruno collection exists and is maintained
+          if [ -d "docs/bruno-collection" ]; then
+            echo "✅ Bruno API collection found"
+            
+            # Count API endpoints
+            endpoint_count=$(find docs/bruno-collection -name "*.bru" | wc -l)
+            echo "📊 API endpoints documented: $endpoint_count"
+          else
+            echo "⚠️ API documentation not found"
+          fi
+
+      - name: Check code comments
+        run: |
+          echo "💬 Analyzing code comments..."
+          
+          # Count files with and without JSDoc comments
+          ts_files=$(find src/ -name "*.ts" | wc -l)
+          files_with_jsdoc=$(grep -l "/\*\*" src/**/*.ts | wc -l || echo "0")
+          
+          echo "📊 TypeScript files: $ts_files"
+          echo "📊 Files with JSDoc: $files_with_jsdoc"
+          
+          if [ "$files_with_jsdoc" -lt "$((ts_files / 2))" ]; then
+            echo "⚠️ Consider adding more JSDoc comments for better documentation"
+          else
+            echo "✅ Good documentation coverage"
+          fi
