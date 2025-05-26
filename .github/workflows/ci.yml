@@ -128,6 +128,11 @@ jobs:
           
           kill $APP_PID 2>/dev/null || true
         timeout-minutes: 2
+        env:
+          # Use in-memory database for API validation
+          TURSO_DB_URL: ":memory:"
+          STORAGE_TYPE: KV
+          ENABLE_LOGS: true
 
   notify:
     name: Notify Status

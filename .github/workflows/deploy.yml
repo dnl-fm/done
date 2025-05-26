@@ -54,7 +54,7 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "done-light" # Deno Deploy project name
-          entrypoint: "deploy.ts"
+          entrypoint: "src/main.ts"
           root: "."
           include: "deno.json"
           exclude: |
@@ -130,7 +130,7 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "done-light" # Deno Deploy project name
-          entrypoint: "deploy.ts"
+          entrypoint: "src/main.ts"
           root: "."
           include: "deno.json"
           exclude: |

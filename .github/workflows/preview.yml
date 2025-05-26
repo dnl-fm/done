@@ -39,7 +39,7 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "done-light"
-          entrypoint: "deploy.ts"
+          entrypoint: "src/main.ts"
           root: "."
           include: "deno.json"
           exclude: |
@@ -52,6 +52,7 @@ jobs:
           DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
           # Preview environment variables (limited functionality)
           AUTH_TOKEN: ${{ secrets.PREVIEW_AUTH_TOKEN || 'preview-token-12345' }}
+          TURSO_DB_URL: ':memory:' # Use in-memory database for previews
           STORAGE_TYPE: 'KV' # Always use KV for previews (no persistent DB needed)
           ENABLE_LOGS: 'true'
           ENABLE_AUTH: 'false' # Disable auth for easier testing
