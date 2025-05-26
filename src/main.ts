@@ -6,6 +6,7 @@ import { SystemRoutes } from './routes/system-routes.ts';
 import { TursoAdminRoutes } from './routes/turso-admin-routes.ts';
 import { UtilityRoutes } from './routes/utility-routes.ts';
 import { DashboardRoutes } from './routes/dashboard-routes.ts';
+import { MigrationRoutes } from './routes/migration-routes.ts';
 import { AuthMiddleware } from './services/auth-middleware.ts';
 import { SystemMessage } from './services/storage/kv-store.ts';
 import { SqliteStore } from './services/storage/sqlite-store.ts';
@@ -99,6 +100,7 @@ const apiRoutes = [
   adminRoutes,
   new SystemRoutes(),
   new UtilityRoutes(kv, sqlite),
+  new MigrationRoutes(kv, sqlite),
 ];
 
 for (const route of apiRoutes) {

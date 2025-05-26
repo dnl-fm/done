@@ -70,27 +70,6 @@ export class TursoAdminRoutes {
       }
     });
 
-    this.routes.post('/stats/initialize', async (c: Context) => {
-      try {
-        // Get all messages
-        const result = await this.sqlite.execute('SELECT status, publish_at FROM messages');
-        const messages = result.rows.map((row) => ({
-          status: row.status as string,
-          publish_at: new Date(row.publish_at as string),
-        }));
-
-        // Initialize stats from messages
-        await this.statsService.initializeFromMessages(messages);
-
-        return c.json({
-          success: true,
-          message: `Stats initialized from ${messages.length} messages`,
-        });
-      } catch (error) {
-        console.error('Error initializing stats:', error);
-        return c.json({ error: 'Failed to initialize stats' }, 500);
-      }
-    });
 
     this.routes.get('/raw/:match?', async (c: Context) => {
       const match = c.req.param('match');
@@ -203,10 +182,10 @@ export class TursoAdminRoutes {
       console.log('Getting hourly state changes from', startDate.toISOString(), 'to', endDate.toISOString());
 
       // Query logs for state changes today
-      // Note: created_at is stored as Unix timestamp in milliseconds
+      // Note: created_at is now stored as ISO timestamp
       const query = `
         SELECT 
-          strftime('%H', datetime(created_at/1000, 'unixepoch')) as hour,
+          strftime('%H', created_at) as hour,
           type,
           before_data,
           after_data
@@ -219,7 +198,7 @@ export class TursoAdminRoutes {
 
       const result = await this.sqlite.execute({
         sql: query,
-        args: [startDate.getTime(), endDate.getTime()],
+        args: [startDate.toISOString(), endDate.toISOString()],
       });
 
       console.log('Found', result.rows.length, 'state change logs');
@@ -272,7 +251,7 @@ export class TursoAdminRoutes {
       // Also count message creations
       const createQuery = `
         SELECT 
-          strftime('%H', datetime(created_at/1000, 'unixepoch')) as hour,
+          strftime('%H', created_at) as hour,
           COUNT(*) as count
         FROM logs
         WHERE created_at >= ? 
@@ -283,7 +262,7 @@ export class TursoAdminRoutes {
 
       const createResult = await this.sqlite.execute({
         sql: createQuery,
-        args: [startDate.getTime(), endDate.getTime()],
+        args: [startDate.toISOString(), endDate.toISOString()],
       });
 
       for (const row of createResult.rows) {

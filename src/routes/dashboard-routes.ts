@@ -1,13 +1,19 @@
 import { Hono } from 'hono';
+import { getCookie, setCookie } from 'hono/cookie';
 import { StoreClient } from '../services/dashboard/store-client.ts';
+import { Env } from '../utils/env.ts';
+import { Security } from '../utils/security.ts';
 
 export class DashboardRoutes {
   private hono: Hono;
   private client: StoreClient;
+  private authToken: string;
+  private sessionTokens = new Map<string, number>(); // token -> expiry timestamp
 
   constructor() {
     this.hono = new Hono();
     this.client = new StoreClient();
+    this.authToken = Env.get('AUTH_TOKEN') || '';
     this.setupRoutes();
   }
 
@@ -84,15 +90,20 @@ export class DashboardRoutes {
 </head>
 <body class="bg-gray-30 min-h-screen">
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <a href="/dashboard">
-          <div class="flex items-center gap-4 mb-6">
-              <img src="/done.jpg" alt="Done Logo" class="h-12 w-12 rounded-lg shadow-sm">
-              <div>
-                  <h1 class="text-2xl font-bold text-gray-900">Done Dashboard</h1>
-                  <small class="text-gray-500">Message Queue on Deno Deploy</small>
-              </div>
-          </div>
+        <div class="flex items-center justify-between mb-6">
+          <a href="/dashboard">
+            <div class="flex items-center gap-4">
+                <img src="/done.jpg" alt="Done Logo" class="h-12 w-12 rounded-lg shadow-sm">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Done Dashboard</h1>
+                    <small class="text-gray-500">Message Queue on Deno Deploy</small>
+                </div>
+            </div>
           </a>
+          <a href="/dashboard/logout" class="text-sm text-gray-600 hover:text-gray-900">
+            Logout →
+          </a>
+        </div>
   
         ${content}
     </main>
@@ -101,9 +112,133 @@ export class DashboardRoutes {
     `;
   }
 
+  private generateLoginPage(error?: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Done Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+          <img src="/done.jpg" alt="Done Logo" class="mx-auto h-20 w-20 rounded-lg shadow-md">
+          <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Sign in to Dashboard</h2>
+          <p class="mt-2 text-sm text-gray-600">Enter your authentication token to continue</p>
+        </div>
+        <form class="mt-8 space-y-6" method="POST" action="/dashboard/login">
+          ${error ? `
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              ${error}
+            </div>
+          ` : ''}
+          <div>
+            <label for="token" class="block text-sm font-medium text-gray-700">Authentication Token</label>
+            <input
+              id="token"
+              name="token"
+              type="password"
+              required
+              class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+              placeholder="Enter your token"
+            >
+          </div>
+          <div>
+            <button
+              type="submit"
+              class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Sign in
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+</body>
+</html>
+    `;
+  }
+
+  private isAuthenticated(c: any): boolean {
+    const sessionToken = getCookie(c, 'dashboard_session');
+    if (!sessionToken) return false;
+    
+    const expiry = this.sessionTokens.get(sessionToken);
+    if (!expiry || expiry < Date.now()) {
+      this.sessionTokens.delete(sessionToken);
+      return false;
+    }
+    
+    return true;
+  }
+
+  private requireAuth(handler: any) {
+    return async (c: any) => {
+      if (!this.isAuthenticated(c)) {
+        return c.redirect('/dashboard/login');
+      }
+      return handler(c);
+    };
+  }
+
   private setupRoutes() {
-    // Dashboard overview
-    this.hono.get('/', async (c) => {
+    // Login page
+    this.hono.get('/login', (c) => {
+      if (this.isAuthenticated(c)) {
+        return c.redirect('/dashboard');
+      }
+      return c.html(this.generateLoginPage());
+    });
+
+    // Handle login
+    this.hono.post('/login', async (c) => {
+      const body = await c.req.parseBody();
+      const token = body.token as string;
+      
+      if (token === this.authToken) {
+        // Create session
+        const sessionToken = Security.generateId();
+        const expiry = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+        this.sessionTokens.set(sessionToken, expiry);
+        
+        // Set cookie
+        setCookie(c, 'dashboard_session', sessionToken, {
+          httpOnly: true,
+          secure: Env.get('DENO_ENV') === 'production',
+          sameSite: 'Lax',
+          maxAge: 86400, // 24 hours in seconds
+          path: '/',
+        });
+        
+        return c.redirect('/dashboard');
+      } else {
+        return c.html(this.generateLoginPage('Invalid authentication token'), 401);
+      }
+    });
+
+    // Logout
+    this.hono.get('/logout', (c) => {
+      const sessionToken = getCookie(c, 'dashboard_session');
+      if (sessionToken) {
+        this.sessionTokens.delete(sessionToken);
+      }
+      
+      setCookie(c, 'dashboard_session', '', {
+        httpOnly: true,
+        secure: Env.get('DENO_ENV') === 'production',
+        sameSite: 'Lax',
+        maxAge: 0,
+        path: '/',
+      });
+      
+      return c.redirect('/dashboard/login');
+    });
+    // Dashboard overview (protected)
+    this.hono.get('/', this.requireAuth(async (c: any) => {
       try {
         const stats = await this.client.getStats();
         const deliveryRate = stats.total > 0 ? ((stats.sent / stats.total) * 100).toFixed(1) : '0.0';
@@ -500,10 +635,10 @@ export class DashboardRoutes {
         `;
         return c.html(this.generateHTML('Error - Done Dashboard', content));
       }
-    });
+    }));
 
-    // Messages list
-    this.hono.get('/messages', async (c) => {
+    // Messages list (protected)
+    this.hono.get('/messages', this.requireAuth(async (c: any) => {
       try {
         const page = parseInt(c.req.query('page') || '1');
         const limit = 25;
@@ -707,10 +842,10 @@ export class DashboardRoutes {
         `;
         return c.html(this.generateHTML('Error - Done Dashboard', content));
       }
-    });
+    }));
 
-    // Individual message detail
-    this.hono.get('/message/:id', async (c) => {
+    // Individual message detail (protected)
+    this.hono.get('/message/:id', this.requireAuth(async (c: any) => {
       try {
         const messageId = c.req.param('id');
         const page = c.req.query('page') || '1';
@@ -978,10 +1113,10 @@ export class DashboardRoutes {
         `;
         return c.html(this.generateHTML('Error - Done Dashboard', content));
       }
-    });
+    }));
 
-    // Handle message recreation
-    this.hono.post('/message/:id/recreate', async (c) => {
+    // Handle message recreation (protected)
+    this.hono.post('/message/:id/recreate', this.requireAuth(async (c: any) => {
       try {
         const messageId = c.req.param('id');
         const page = c.req.query('page') || '1';
@@ -1019,7 +1154,7 @@ export class DashboardRoutes {
         `;
         return c.html(this.generateHTML('Recreation Failed - Done Dashboard', content));
       }
-    });
+    }));
   }
 
   getBasePath(): string {
