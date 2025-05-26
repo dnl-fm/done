@@ -20,8 +20,13 @@ __Key features:__
 - [Introduction](#introduction)
 - [Features](#features)
 - [What about Deno's native queue?](#what-about-denos-native-queue)
+- [Quick Start](#quick-start)
 - [Setup on Deno Deploy](#setup-on-deno-deploy)
 - [API Endpoints](#api-endpoints)
+  - [Core Message Operations](#core-message-operations)
+  - [Administrative & Monitoring Tools](#administrative--monitoring-tools)
+  - [Testing & Development](#testing--development)
+  - [Expected API Responses](#expected-api-responses)
 - [Credits](#credits)
 - [Who is DNL](#who-is-dnl)
 - [Feedback](#feedback)
@@ -41,29 +46,117 @@ Embrace the open-source simplicity with Done. Queue up, have fun, and get it don
 
 ### Storage Options
 
-Done supports two fantastic storage backends (because choices are awesome!):
+Done supports two storage backends, each with distinct strengths:
 
-1. **Deno KV (Default)**: Uses Deno's built-in key-value store for all data storage - it's simple, fast, and plays beautifully with Deno Deploy! 🦕
-2. **Turso**: Stores data in SQLite (locally for development) or Turso's distributed SQLite service (for production) - when you need that SQL flexibility and want to scale like a boss! 🚀
+#### 🏆 **Turso (Recommended for Production)**
 
-Each storage backend is lovingly crafted with its own specialized implementation:
-- **KV Storage**: Uses a key-value model with secondary indexes for lightning-fast lookups - it's like having a perfectly organized digital filing cabinet! 📁
-- **Turso Storage**: Leverages SQL's native query superpowers for efficient data retrieval and manipulation - because sometimes you need that SQL muscle! 💪
+**Why Turso?** When you're managing data relationships, dependencies, and complex queries, SQL is your best friend. Turso gives you the power of SQLite with global distribution - perfect for applications that need to scale and manage interconnected data efficiently.
 
-To configure the storage backend, set the following environment variables:
+- **Local Development**: Use `:memory:` for testing or `file:local.db` for persistent local development
+- **Production**: Deploy to Turso's global edge network with automatic replication
+- **Data Management**: Full SQL capabilities for complex queries, relationships, and data integrity
+- **Scalability**: Built for production workloads with edge distribution
+- **Migration Support**: Built-in schema migrations for evolving your data structure
 
+```bash
+# Recommended production setup
+STORAGE_TYPE=TURSO
+TURSO_DB_URL=https://your-db.turso.io
+TURSO_AUTH_TOKEN=your-auth-token
+
+# Local development options
+TURSO_DB_URL=:memory:           # For testing
+TURSO_DB_URL=file:local.db      # For persistent local dev
 ```
-# Choose storage type: 'KV' or 'TURSO' 
-STORAGE_TYPE=KV  # Default is 'KV' if not specified
 
-# For Turso storage
-TURSO_DB_URL=https://your-db.turso.io  # Optional: defaults to local SQLite file if not provided
-TURSO_AUTH_TOKEN=your-auth-token       # Optional: only needed for Turso cloud
+#### ⚡ **Deno KV (Built-in Simplicity)**
+
+**When to use KV?** Perfect for simple use cases where you need zero setup and minimal configuration. KV excels at key-value operations but isn't designed for managing complex data relationships or dependencies.
+
+- **Zero Setup**: Works out of the box with Deno Deploy
+- **Simple Operations**: Great for basic CRUD operations
+- **Built-in**: No external dependencies required
+- **Limitations**: Not ideal for complex data relationships or advanced querying
+
+```bash
+# Simple setup - works immediately
+STORAGE_TYPE=KV  # This is the fallback default
 ```
 
-For local development with Turso, you've got options! Use an in-memory database by setting `TURSO_DB_URL=:memory:` (perfect for testing - it's like having a scratch pad that vanishes when you're done) or a local file with `TURSO_DB_URL=file:turso.db` (when you want persistence without the cloud).
+#### 🤔 **Which Should You Choose?**
 
-Want to switch between storage types? Just update that `STORAGE_TYPE` env variable - it's like having a storage Swiss Army knife at your fingertips! 🔄 Whether you're team KV or team Turso, Done's got your back. 🎯
+- **Choose Turso** if you're building a production application, need data relationships, want SQL querying power, or plan to scale beyond basic message queuing
+- **Choose KV** if you want absolute simplicity, are prototyping, or have minimal data management needs
+
+**Our Recommendation**: Start with Turso for any serious project. The migration system and SQL capabilities will serve you well as your application grows. KV is fantastic for getting started quickly, but Turso provides the foundation for long-term success.
+
+To configure your storage backend:
+
+```bash
+# Set your preferred storage type
+STORAGE_TYPE=TURSO  # or 'KV' for simplicity
+
+# Required for Turso (production)
+TURSO_DB_URL=https://your-db.turso.io
+TURSO_DB_AUTH_TOKEN=your-auth-token
+```
+
+## Quick Start
+
+### 1. Get Turso Setup (Recommended)
+
+```bash
+# Install Turso CLI
+curl -sSfL https://get.tur.so/install.sh | bash
+
+# Create your database
+turso db create done-db
+
+# Get your database URL and auth token
+turso db show done-db --url
+turso db tokens create done-db
+```
+
+### 2. Environment Configuration
+
+Create a `.env.local` file for development:
+
+```bash
+# Storage configuration (recommended)
+STORAGE_TYPE=TURSO
+TURSO_DB_URL=:memory:  # or your Turso URL for production
+TURSO_AUTH_TOKEN=your-token-here
+
+# Authentication
+AUTH_TOKEN=your-secret-auth-token
+
+# Optional: Enable detailed logging
+ENABLE_LOGS=true
+```
+
+### 3. Run Locally
+
+```bash
+# Clone the repository
+git clone https://github.com/dnl-fm/done.git
+cd done
+
+# Run with environment file
+deno task dev
+```
+
+### 4. Test Your Setup
+
+```bash
+# Send a test message
+curl -X POST 'http://localhost:3001/v1/https://httpbin.org/post' \
+  -H 'Authorization: Bearer your-secret-auth-token' \
+  -H 'Content-Type: application/json' \
+  -H 'Done-Delay: 10s' \
+  -d '{"message": "Hello from Done!"}'
+```
+
+Ready to deploy? Check out the [Setup on Deno Deploy](#setup-on-deno-deploy) section below! 🚀
 
 ### Absolute Delay
 
@@ -261,20 +354,173 @@ __P.S. Big shoutout to the Deno team! Without Deno Queues and Deno KV, this tool
 
 ## Setup on Deno Deploy
 
-Setup a project over at [Deno Deploy](https://deno.com/deploy). Either you deploy Done yourself or you connect it with your Github repository to deploy it automatically.
+### 1. Create Your Deno Deploy Project
 
-When this is "done", all you need is an environment variable `AUTH_TOKEN` which you can create in your project settings. With that _Done_ can validate your authorization bearer token against that env variable.
+Setup a project over at [Deno Deploy](https://deno.com/deploy). You can either:
+- Deploy Done directly by uploading the code
+- Connect it with your GitHub repository for automatic deployments (recommended)
 
-Starting from v1.1.0, you can also add `ENABLE_LOGS=true` to your environment variable to control logging. By default, logging is disabled. This should save about 2/3 of your KV writes.
-So, if saving KV writes is your thing, keep it stealthy; otherwise, let the logs roar!
+### 2. Configure Environment Variables
 
-With that, you've got everything in place like a squirrel with a perfectly organized nut collection before winter! 🐿️
+In your Deno Deploy project settings, add these environment variables:
+
+#### Required Variables
+```bash
+# Authentication (required)
+AUTH_TOKEN=your-super-secret-auth-token
+
+# Storage type (recommended: Turso)
+STORAGE_TYPE=TURSO
+
+# For Turso storage (recommended for production)
+TURSO_DB_URL=https://your-db.turso.io
+TURSO_AUTH_TOKEN=your-turso-auth-token
+```
+
+#### Optional Variables
+```bash
+# Enable detailed logging (saves KV writes if using KV storage)
+ENABLE_LOGS=true
+
+# Only if using KV storage (not recommended for production)
+STORAGE_TYPE=KV  # Fallback option
+```
+
+### 3. Turso Production Setup
+
+For production deployments with Turso:
+
+1. **Create a production database**:
+   ```bash
+   turso db create done-production
+   ```
+
+2. **Get your production URL and token**:
+   ```bash
+   turso db show done-production --url
+   turso db tokens create done-production
+   ```
+
+3. **Set up replica locations** (optional, but recommended):
+   ```bash
+   turso db replicate done-production --location fra
+   turso db replicate done-production --location nrt
+   ```
+
+4. **Add the credentials to Deno Deploy environment variables**
+
+### 4. Deploy and Test
+
+Once deployed, test your setup:
+
+```bash
+curl -X POST 'https://your-deploy.deno.dev/v1/https://httpbin.org/post' \
+  -H 'Authorization: Bearer your-super-secret-auth-token' \
+  -H 'Content-Type: application/json' \
+  -H 'Done-Delay: 30s' \
+  -d '{"message": "Hello from production!"}'
+```
+
+**Pro tip**: Use the Bruno collection in `docs/bruno-collection/` to test all endpoints systematically! 🚀
+
+With Turso, you get a globally distributed, production-ready setup that scales with your needs. Like having a perfectly organized digital infrastructure that works worldwide! 🌍
 
 ## API Endpoints
 
-There are a couple of API endpoints defined as a [bruno collection](https://github.com/usebruno/bruno). The collection can be [found here](docs/bruno-collection/).
+Done provides comprehensive API endpoints to manage and monitor your message queue. These are your tools for inspecting data, debugging issues, and understanding your message flow.
 
-There is also another helping hand in the game: [gotrequests.com](https://github.com/dnl-fm/gotrequests.com). Just like our mentioned diligent squirrel preparing for winter by collecting nuts, it helps you collect incoming requests with all their attached data. Before you connect your real-world projects, use `gotrequests.com` to simulate how a callback from _Done_ would look. It's like making sure every nut is in place before your project launches!
+### Core Message Operations
+
+#### 🚀 **Send Messages**
+- `POST /v1/{callback-url}` - Queue a message for delivery
+- Headers: `Done-Delay`, `Done-Not-Before`, `Done-*` (custom callback headers)
+- Returns: Message ID and scheduled delivery time
+
+#### 📋 **Inspect Messages**
+- `GET /v1/{message-id}` - Fetch specific message details
+- `GET /v1/by-status/{status}` - List messages by status (CREATED, QUEUED, DELIVERED, FAILED)
+- View message payload, status, retry count, and scheduling information
+
+### Administrative & Monitoring Tools
+
+#### 📊 **System Health**
+- `GET /v1/system/ping` - Health check (no auth required)
+- `GET /v1/system/health` - Detailed system status with storage info
+
+#### 📈 **Analytics & Stats**
+- `GET /v1/admin/stats` - Get comprehensive queue statistics
+  - Message counts by status
+  - Success/failure rates
+  - Storage utilization
+  - Processing metrics
+
+#### 🔍 **Data Inspection**
+- `GET /v1/admin/raw` - Browse raw data with filtering
+  - Query parameters: `match` for filtering, `limit` for pagination
+  - Inspect the underlying data structure
+  - Debug storage issues
+
+#### 📝 **Activity Logs** (when `ENABLE_LOGS=true`)
+- `GET /v1/admin/logs` - View all system activity logs
+- `GET /v1/admin/log/{message-id}` - Get detailed logs for specific message
+  - Track message lifecycle events
+  - Debug delivery issues
+  - Monitor retry attempts
+
+#### 🧹 **Data Management**
+- `DELETE /v1/admin/reset` - Reset all messages (dev/testing)
+- `DELETE /v1/admin/reset/logs` - Clear only logs (when supported)
+- Query parameters: `match` for selective deletion
+
+### Testing & Development
+
+#### 🧪 **Test Your Setup**
+Use [gotrequests.com](https://github.com/dnl-fm/gotrequests.com) to simulate and inspect callbacks before connecting your real endpoints. It's like having a sandbox to see exactly how Done will call your services!
+
+#### 📚 **Bruno Collection**
+All endpoints are documented as a [Bruno collection](docs/bruno-collection/) with:
+- Ready-to-use requests for all endpoints
+- Environment configurations for Dev/Stage/Prod
+- Example payloads and expected responses
+
+### Expected API Responses
+
+**Message Creation Success:**
+```json
+{
+  "id": "msg_abc123def456",
+  "publish_at": "2024-01-15T14:30:00Z"
+}
+```
+
+**Statistics Overview:**
+```json
+{
+  "messages": {
+    "total": 1247,
+    "created": 12,
+    "queued": 8,
+    "delivered": 1180,
+    "failed": 47
+  },
+  "storage_type": "TURSO"
+}
+```
+
+**Message Details:**
+```json
+{
+  "id": "msg_abc123def456",
+  "status": "DELIVERED",
+  "url": "https://your-app.com/webhook",
+  "payload": {"user": "john", "action": "signup"},
+  "retry_count": 1,
+  "publish_at": "2024-01-15T14:30:00Z",
+  "created_at": "2024-01-15T14:25:00Z"
+}
+```
+
+These endpoints give you complete visibility into your message queue operations - perfect for monitoring, debugging, and understanding your application's messaging patterns! 🔍
 
 ## Credits
 
