@@ -878,8 +878,8 @@ export class DashboardRoutes {
                     break;
                   case 'STORE_UPDATE_EVENT':
                     if (log.before_data && log.after_data) {
-                      const before = log.before_data as any;
-                      const after = log.after_data as any;
+                      const before = log.before_data as { status?: string };
+                      const after = log.after_data as { status?: string };
                       if (before.status !== after.status) {
                         eventDescription = `Status changed from ${before.status} to ${after.status}`;
 
@@ -936,10 +936,10 @@ export class DashboardRoutes {
                                 <div>
                                   <p class="text-sm text-gray-900">${eventDescription}</p>
                                   ${
-                  log.after_data && (log.after_data as any).last_errors
+                  log.after_data && (log.after_data as { last_errors?: Array<{ message?: string }> }).last_errors
                     ? `
                                     <p class="mt-1 text-sm text-red-600">
-                                      Error: ${((log.after_data as any).last_errors[0] || {}).message || 'Unknown error'}
+                                      Error: ${((log.after_data as { last_errors?: Array<{ message?: string }> }).last_errors?.[0] || {}).message || 'Unknown error'}
                                     </p>
                                   `
                     : ''

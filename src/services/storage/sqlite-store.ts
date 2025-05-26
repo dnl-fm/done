@@ -1,4 +1,4 @@
-import type { Client, InArgs, InStatement, InValue, Transaction } from 'libsql-core';
+import type { Client, InArgs, InStatement as _InStatement, InValue, Transaction } from 'libsql-core';
 
 type InMemory = ':memory:';
 

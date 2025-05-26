@@ -77,7 +77,7 @@ export class StoreClient {
     }));
 
     // Transform daily trend data
-    const dailyTrend = (data.trend7d || []).map((day: any) => ({
+    const dailyTrend = (data.trend7d || []).map((day: { date: string; sent?: number; incoming?: number }) => ({
       date: day.date,
       delivered: day.sent || 0,
       failed: (day.incoming || 0) - (day.sent || 0),
@@ -120,9 +120,9 @@ export class StoreClient {
       publish_at: string;
       created_at: string;
       updated_at: string;
-      payload?: any;
+      payload?: Record<string, unknown>;
       headers?: Record<string, string>;
-      last_errors?: any[];
+      last_errors?: Array<{ message?: string; timestamp?: string }>;
     }>;
     total: number;
     limit: number;
@@ -140,11 +140,11 @@ export class StoreClient {
     const rawData = await response.json();
 
     // Transform the raw data into expected format
-    const allMessages = rawData.map((item: any) => {
+    const allMessages = rawData.map((item: { data: Record<string, unknown> }) => {
       const row = item.data;
 
       // Parse the payload to extract URL and headers
-      let parsedPayload: any = {};
+      let parsedPayload: Record<string, unknown> = {};
       let url = '';
       let headers: Record<string, string> = {};
 
@@ -178,7 +178,7 @@ export class StoreClient {
     // Apply status filter if provided
     let filteredMessages = allMessages;
     if (params.status) {
-      filteredMessages = allMessages.filter((msg: any) => msg.status === params.status.toUpperCase());
+      filteredMessages = allMessages.filter((msg: { status: string }) => msg.status === params.status.toUpperCase());
     }
 
     // Apply pagination
@@ -203,9 +203,9 @@ export class StoreClient {
     publish_at: string;
     created_at: string;
     updated_at: string;
-    payload?: any;
+    payload?: Record<string, unknown>;
     headers?: Record<string, string>;
-    last_errors?: any[];
+    last_errors?: Array<{ message?: string; timestamp?: string }>;
   }> {
     const response = await this.fetch(`/messages/${messageId}`);
     if (!response.ok) {
@@ -241,8 +241,8 @@ export class StoreClient {
       id: string;
       type: string;
       message_id: string;
-      before_data: any;
-      after_data: any;
+      before_data: Record<string, unknown> | null;
+      after_data: Record<string, unknown> | null;
       created_at: string;
     }>
   > {
@@ -260,7 +260,7 @@ export class StoreClient {
    */
   async recreateMessage(message: {
     url: string;
-    payload?: any;
+    payload?: Record<string, unknown>;
     headers?: Record<string, string>;
     publish_at?: string;
   }): Promise<{

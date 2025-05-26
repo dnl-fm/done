@@ -38,9 +38,9 @@ export class StatsService {
 
   async getStats(): Promise<StatsData> {
     if (this.storage.kv) {
-      return this.getKvStats();
+      return await this.getKvStats();
     } else if (this.storage.sqlite) {
-      return this.getSqliteStats();
+      return await this.getSqliteStats();
     }
 
     return this.getEmptyStats();
