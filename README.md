@@ -27,6 +27,7 @@ __Key features:__
   - [Administrative & Monitoring Tools](#administrative--monitoring-tools)
   - [Testing & Development](#testing--development)
   - [Expected API Responses](#expected-api-responses)
+- [Roadmap](#roadmap)
 - [What about Deno's native queue?](#what-about-denos-native-queue)
 - [Credits](#credits)
 - [Who is DNL](#who-is-dnl)
@@ -510,6 +511,19 @@ All endpoints are documented as a [Bruno collection](docs/bruno-collection/) wit
 ```
 
 These endpoints give you complete visibility into your message queue operations - perfect for monitoring, debugging, and understanding your application's messaging patterns! 🔍
+
+## Roadmap
+
+We're continuously working to make Done even better! Here are some exciting features on our roadmap:
+
+- [ ] **Storage Backend Migration**: Seamlessly migrate data between KV and Turso storage backends
+- [ ] **Data Export/Import**: Tools to backup and restore your message data
+- [ ] **Data Visualization**: Interactive dashboard to view all messages, stats, and logs
+- [ ] **Real-time Monitoring**: Live updates of message status and queue health
+- [ ] **Message Management**: Web interface to inspect, retry, or cancel messages
+- [ ] **Analytics Dashboard**: Visual insights into message patterns and performance metrics
+
+Want to contribute to any of these features? We'd love your help! Check out our [GitHub repository](https://github.com/dnl-fm/done) or join us on [Discord](https://discord.gg/JEYJbQgnWp).
 
 ## What about Deno's native Queue?
 
