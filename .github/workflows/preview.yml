@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == github.repository # Only for same repo PRs
     
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC token
+      pull-requests: write # For PR comments
+    
     environment:
       name: preview-pr-${{ github.event.number }}
       url: https://done-preview-pr-${{ github.event.number }}.deno.dev

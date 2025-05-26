@@ -27,6 +27,10 @@ jobs:
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.ref != 'refs/heads/main') ||
       (github.event_name == 'push' && github.ref != 'refs/heads/main')
     
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC token
+    
     environment:
       name: staging
       url: https://done-staging.deno.dev
@@ -97,6 +101,10 @@ jobs:
       (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production') ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC token
     
     environment:
       name: production
