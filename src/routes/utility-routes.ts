@@ -727,13 +727,17 @@ export class UtilityRoutes {
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
 
-    // Distribute messages across the last 24 hours
-    const hoursAgo = 24 * (1 - index / total);
-    const createdTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+    // Calculate the time span from start of day to now
+    const hoursFromMidnight = (now.getTime() - startOfDay.getTime()) / (60 * 60 * 1000);
 
-    // Add some randomness within the hour
+    // Distribute messages evenly across today's hours (from midnight to now)
+    const hourOffset = hoursFromMidnight * (index / total);
+    const createdTime = new Date(startOfDay.getTime() + hourOffset * 60 * 60 * 1000);
+
+    // Add some randomness within the hour (0-59 minutes)
     const minuteOffset = Math.floor(Math.random() * 60);
-    createdTime.setMinutes(minuteOffset);
+    const secondOffset = Math.floor(Math.random() * 60);
+    createdTime.setMinutes(minuteOffset, secondOffset);
 
     return createdTime;
   }
