@@ -2,6 +2,7 @@ import { Context } from 'hono';
 import { MessagesStoreInterface } from '../interfaces/messages-store-interface.ts';
 import { LogsStoreInterface } from '../interfaces/logs-store-interface.ts';
 import { AbstractKvStore } from '../stores/kv/abstract-kv-store.ts';
+import { StatsService } from '../services/stats-service.ts';
 import { Routes } from '../utils/routes.ts';
 
 /**
@@ -10,12 +11,15 @@ import { Routes } from '../utils/routes.ts';
 export class KvAdminRoutes {
   private basePath = `/admin`;
   private routes = Routes.initHono({ basePath: this.basePath });
+  private statsService: StatsService;
 
   constructor(
     private readonly messageStore: MessagesStoreInterface,
     private readonly logsStore: LogsStoreInterface,
     private readonly kv: Deno.Kv,
-  ) {}
+  ) {
+    this.statsService = new StatsService({ kv });
+  }
 
   /**
    * Gets the versioned base path for admin routes.
@@ -28,6 +32,10 @@ export class KvAdminRoutes {
 
   getRoutes() {
     this.routes.get('/stats', async (c: Context) => {
+      // Get stats from the stats service
+      const serviceStats = await this.statsService.getStats();
+
+      // Get additional KV store stats (logs, etc)
       const stats: Record<string, number> = {};
       const entries = this.kv.list({ prefix: [] });
 
@@ -47,7 +55,67 @@ export class KvAdminRoutes {
         stats[statsKey]++;
       }
 
-      return c.json({ stats });
+      // Merge counter-based stats with other KV stats
+      stats['messages'] = serviceStats.total;
+      stats['messages/last24h'] = serviceStats.last24h;
+      stats['messages/last7d'] = serviceStats.last7d;
+
+      // Add status breakdown
+      for (const [status, count] of Object.entries(serviceStats.byStatus)) {
+        stats[`messages/secondaries/BY_STATUS/${status}`] = count;
+      }
+
+      // For KV, hourly state changes would need to be tracked differently
+      // This is a placeholder - in production, we'd need to implement
+      // a way to track state changes by hour in KV
+      const hourlyStateChanges = Array(24).fill(null).map((_, hour) => ({
+        hour,
+        created: 0,
+        queued: 0,
+        delivering: 0,
+        sent: 0,
+        retry: 0,
+        failed: 0,
+        dlq: 0,
+      }));
+
+      return c.json({
+        stats,
+        trend7d: serviceStats.dailyTrend,
+        hourlyActivity: serviceStats.hourlyActivity,
+        hourlyStateChanges,
+      });
+    });
+
+    this.routes.post('/stats/initialize', async (c: Context) => {
+      try {
+        // Get all messages
+        const messages: Array<{ status: string; publish_at: Date }> = [];
+        const entries = this.kv.list({ prefix: ['stores', 'messages'] });
+
+        for await (const entry of entries) {
+          if (entry.key[2] !== 'secondaries' && entry.value && typeof entry.value === 'object') {
+            const msg = entry.value as Record<string, unknown>;
+            if (msg.status && typeof msg.status === 'string' && msg.publish_at) {
+              messages.push({
+                status: msg.status,
+                publish_at: new Date(msg.publish_at as string),
+              });
+            }
+          }
+        }
+
+        // Initialize stats from messages
+        await this.statsService.initializeFromMessages(messages);
+
+        return c.json({
+          success: true,
+          message: `Stats initialized from ${messages.length} messages`,
+        });
+      } catch (error) {
+        console.error('Error initializing stats:', error);
+        return c.json({ error: 'Failed to initialize stats' }, 500);
+      }
     });
 
     const storageFilterHandler = async (match?: string) => {

@@ -31,7 +31,7 @@ export class TursoLogsStore implements LogsStoreInterface {
     options?: { withId: string },
   ): Promise<z.infer<typeof LogMessageModelSchema>> {
     const id = options?.withId || this.buildModelIdWithPrefix();
-    const now = Date.now();
+    const now = new Date();
 
     await this.sqlite.execute({
       sql: `INSERT INTO logs (id, type, object, message_id, before_data, after_data, created_at)
@@ -43,7 +43,7 @@ export class TursoLogsStore implements LogsStoreInterface {
         message_id: data.message_id,
         before_data: JSON.stringify(data.before_data),
         after_data: JSON.stringify(data.after_data),
-        created_at: now,
+        created_at: now.toISOString(),
       },
     });
 
@@ -54,7 +54,7 @@ export class TursoLogsStore implements LogsStoreInterface {
       message_id: data.message_id,
       before_data: data.before_data,
       after_data: data.after_data,
-      created_at: new Date(now),
+      created_at: now,
     };
   }
 
@@ -74,7 +74,7 @@ export class TursoLogsStore implements LogsStoreInterface {
       message_id: row.message_id as string,
       before_data: JSON.parse(row.before_data as string),
       after_data: JSON.parse(row.after_data as string),
-      created_at: new Date(row.created_at as number),
+      created_at: new Date(row.created_at as string),
     }));
   }
 
@@ -94,7 +94,7 @@ export class TursoLogsStore implements LogsStoreInterface {
       message_id: row.message_id as string,
       before_data: JSON.parse(row.before_data as string),
       after_data: JSON.parse(row.after_data as string),
-      created_at: new Date(row.created_at as number),
+      created_at: new Date(row.created_at as string),
     }));
   }
 

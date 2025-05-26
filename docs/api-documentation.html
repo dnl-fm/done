@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Done API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+            background-color: #fafbfc;
+            color: #3e4c59;
+            line-height: 1.5;
+        }
+        
+        .header {
+            background-color: #fff;
+            border-bottom: 1px solid #d8dee4;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #24292ec ;
+        }
+        
+        .header .subtitle {
+            color: #586069;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .intro {
+            background-color: #fff;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+            color: #586069;
+        }
+        
+        .intro h2 {
+            font-size: 1.125rem;
+            color: #24292e;
+            margin-bottom: 0.75rem;
+        }
+        
+        .intro code {
+            background-color: rgba(27,31,35,0.05);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        
+        .api-section {
+            margin-bottom: 3rem;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #24292e;
+        }
+        
+        .section-description {
+            color: #586069;
+            font-size: 0.875rem;
+        }
+        
+        .expand-icon {
+            display: none;
+        }
+        
+        .endpoints {
+            display: block;
+        }
+        
+        .endpoint {
+            background-color: #fff;
+            border: 1px solid #d1d5da;
+            border-radius: 6px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+        }
+        
+        .endpoint:hover {
+            box-shadow: 0 0 0 3px rgba(3,102,214,0.1);
+        }
+        
+        .endpoint-summary {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            gap: 1rem;
+        }
+        
+        .method {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .method.get {
+            background-color: #61affe;
+            color: white;
+        }
+        
+        .method.post {
+            background-color: #49cc90;
+            color: white;
+        }
+        
+        .method.put {
+            background-color: #fca130;
+            color: white;
+        }
+        
+        .method.delete {
+            background-color: #f93e3e;
+            color: white;
+        }
+        
+        .endpoint-path {
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #24292e;
+            flex: 1;
+        }
+        
+        .endpoint-description {
+            color: #586069;
+            font-size: 0.813rem;
+            flex: 2;
+        }
+        
+        .lock-icon {
+            color: #586069;
+            font-size: 1rem;
+            margin-left: auto;
+        }
+        
+        .expand-endpoint {
+            color: #586069;
+            font-size: 1.25rem;
+            margin-left: 0.5rem;
+            transition: transform 0.2s;
+        }
+        
+        .endpoint.expanded .expand-endpoint {
+            transform: rotate(90deg);
+        }
+        
+        .endpoint-details {
+            border-top: 1px solid #e1e4e8;
+            padding: 1.5rem;
+            display: none;
+            background-color: #f6f8fa;
+        }
+        
+        .endpoint.expanded .endpoint-details {
+            display: block;
+        }
+        
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .detail-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .detail-section h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #24292e;
+        }
+        
+        .parameters-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.813rem;
+        }
+        
+        .parameters-table th {
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 1px solid #e1e4e8;
+            font-weight: 600;
+            color: #24292e;
+            background-color: #fff;
+        }
+        
+        .parameters-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid #e1e4e8;
+            vertical-align: top;
+        }
+        
+        .param-name {
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-weight: 600;
+            color: #24292e;
+        }
+        
+        .param-required {
+            color: #f93e3e;
+            font-size: 0.75rem;
+        }
+        
+        .param-type {
+            color: #586069;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.813rem;
+        }
+        
+        .param-description {
+            color: #586069;
+        }
+        
+        .code-block {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.813rem;
+            line-height: 1.45;
+        }
+        
+        .code-block .key {
+            color: #9cdcfe;
+        }
+        
+        .code-block .string {
+            color: #ce9178;
+        }
+        
+        .code-block .number {
+            color: #b5cea8;
+        }
+        
+        .code-block .boolean {
+            color: #569cd6;
+        }
+        
+        .code-block .null {
+            color: #569cd6;
+        }
+        
+        .example-section {
+            background-color: #fff;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 1rem;
+        }
+        
+        .example-header {
+            font-size: 0.813rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #24292e;
+        }
+        
+        .base-url {
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        
+        .auth-notice {
+            background-color: #fff5b1;
+            border: 1px solid #f9c513;
+            border-radius: 6px;
+            padding: 0.75rem;
+            font-size: 0.813rem;
+            color: #735c0f;
+            margin-bottom: 1rem;
+        }
+        
+        .auth-notice strong {
+            color: #613a00;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Done API</h1>
+        <div class="subtitle">Lightweight Message Queue Service - v2.0.0</div>
+    </div>
+    
+    <div class="container">
+        <div class="intro">
+            <h2>Base URL</h2>
+            <div class="base-url">https://your-domain.com/v1</div>
+            
+            <div class="auth-notice">
+                <strong>🔒 Authentication Required:</strong> All endpoints (except system health checks) require Bearer token authentication.
+                Include the header: <code>Authorization: Bearer YOUR_AUTH_TOKEN</code>
+            </div>
+            
+            <p>Done is a lightweight, performant message queue service built with Deno. It provides reliable message delivery with support for scheduled messages, retries, and multiple storage backends including Deno KV and Turso SQLite.</p>
+        </div>
+        
+        <!-- Messages Section -->
+        <div class="api-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2 class="section-title">messages</h2>
+                <span class="section-description">Core message queue operations</span>
+                <span class="expand-icon">▼</span>
+            </div>
+            
+            <div class="endpoints">
+                <!-- Create Message -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/messages/{url}</span>
+                        <span class="endpoint-description">Create a new message with callback URL</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Parameters</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <span class="param-name">url</span>
+                                            <span class="param-required">*</span>
+                                        </td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="param-description">The callback URL where the message will be delivered</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Headers</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">X-Delay</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="param-description">Optional delay before delivery (e.g., "30s", "5m", "1h")</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">X-Publish-At</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="param-description">Optional ISO timestamp for scheduled delivery</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Request Body</h4>
+                            <div class="example-section">
+                                <div class="example-header">Example</div>
+                                <pre class="code-block">{
+  <span class="key">"event"</span>: <span class="string">"user.created"</span>,
+  <span class="key">"userId"</span>: <span class="string">"12345"</span>,
+  <span class="key">"email"</span>: <span class="string">"user@example.com"</span>,
+  <span class="key">"timestamp"</span>: <span class="string">"2024-01-15T10:30:00Z"</span>
+}</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"id"</span>: <span class="string">"msg_1234567890"</span>,
+  <span class="key">"url"</span>: <span class="string">"https://example.com/webhook"</span>,
+  <span class="key">"payload"</span>: { ... },
+  <span class="key">"status"</span>: <span class="string">"CREATED"</span>,
+  <span class="key">"publish_at"</span>: <span class="string">"2024-01-15T10:30:00Z"</span>,
+  <span class="key">"created_at"</span>: <span class="string">"2024-01-15T10:00:00Z"</span>
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Get Message -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/messages/{id}</span>
+                        <span class="endpoint-description">Fetch a single message by ID</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Parameters</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <span class="param-name">id</span>
+                                            <span class="param-required">*</span>
+                                        </td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="param-description">The message ID</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"id"</span>: <span class="string">"msg_1234567890"</span>,
+  <span class="key">"url"</span>: <span class="string">"https://example.com/webhook"</span>,
+  <span class="key">"payload"</span>: {
+    <span class="key">"event"</span>: <span class="string">"user.created"</span>,
+    <span class="key">"userId"</span>: <span class="string">"12345"</span>
+  },
+  <span class="key">"status"</span>: <span class="string">"SENT"</span>,
+  <span class="key">"publish_at"</span>: <span class="string">"2024-01-15T10:30:00Z"</span>,
+  <span class="key">"delivered_at"</span>: <span class="string">"2024-01-15T10:30:05Z"</span>,
+  <span class="key">"retried"</span>: <span class="number">0</span>,
+  <span class="key">"last_errors"</span>: [],
+  <span class="key">"created_at"</span>: <span class="string">"2024-01-15T10:00:00Z"</span>,
+  <span class="key">"updated_at"</span>: <span class="string">"2024-01-15T10:30:05Z"</span>
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Get Messages by Status -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/messages/by-status/{status}</span>
+                        <span class="endpoint-description">Fetch messages by status with pagination</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Parameters</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <span class="param-name">status</span>
+                                            <span class="param-required">*</span>
+                                        </td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="param-description">Message status: CREATED, QUEUED, DELIVER, SENT, RETRY, DLQ, FAILED, ARCHIVED</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Query Parameters</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">limit</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td><span class="param-description">Number of messages to return (default: 10, max: 100)</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">offset</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td><span class="param-description">Number of messages to skip (default: 0)</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"messages"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="string">"msg_1234567890"</span>,
+      <span class="key">"url"</span>: <span class="string">"https://example.com/webhook"</span>,
+      <span class="key">"status"</span>: <span class="string">"SENT"</span>,
+      <span class="key">"created_at"</span>: <span class="string">"2024-01-15T10:00:00Z"</span>
+    }
+  ],
+  <span class="key">"total"</span>: <span class="number">42</span>,
+  <span class="key">"limit"</span>: <span class="number">10</span>,
+  <span class="key">"offset"</span>: <span class="number">0</span>
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin Section -->
+        <div class="api-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2 class="section-title">admin</h2>
+                <span class="section-description">Administrative and monitoring operations</span>
+                <span class="expand-icon">▼</span>
+            </div>
+            
+            <div class="endpoints">
+                <!-- Get Stats -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/admin/stats</span>
+                        <span class="endpoint-description">Fetch statistics about messages</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"total"</span>: <span class="number">1234</span>,
+  <span class="key">"byStatus"</span>: {
+    <span class="key">"CREATED"</span>: <span class="number">10</span>,
+    <span class="key">"QUEUED"</span>: <span class="number">5</span>,
+    <span class="key">"DELIVER"</span>: <span class="number">3</span>,
+    <span class="key">"SENT"</span>: <span class="number">987</span>,
+    <span class="key">"RETRY"</span>: <span class="number">2</span>,
+    <span class="key">"DLQ"</span>: <span class="number">0</span>,
+    <span class="key">"FAILED"</span>: <span class="number">227</span>,
+    <span class="key">"ARCHIVED"</span>: <span class="number">0</span>
+  },
+  <span class="key">"last24Hours"</span>: <span class="number">234</span>,
+  <span class="key">"last7Days"</span>: <span class="number">1567</span>
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Get Logs -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/admin/logs</span>
+                        <span class="endpoint-description">Fetch all logs with pagination</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Query Parameters</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">limit</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td><span class="param-description">Number of logs to return (default: 50)</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">offset</span></td>
+                                        <td><span class="param-type">number</span></td>
+                                        <td><span class="param-description">Number of logs to skip (default: 0)</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"logs"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="string">"log_abc123"</span>,
+      <span class="key">"type"</span>: <span class="string">"status_change"</span>,
+      <span class="key">"object"</span>: <span class="string">"message"</span>,
+      <span class="key">"message_id"</span>: <span class="string">"msg_1234567890"</span>,
+      <span class="key">"before_data"</span>: { <span class="key">"status"</span>: <span class="string">"CREATED"</span> },
+      <span class="key">"after_data"</span>: { <span class="key">"status"</span>: <span class="string">"QUEUED"</span> },
+      <span class="key">"created_at"</span>: <span class="string">"2024-01-15T10:00:00Z"</span>
+    }
+  ],
+  <span class="key">"total"</span>: <span class="number">5678</span>
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Get Logs by Message ID -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/admin/log/{messageId}</span>
+                        <span class="endpoint-description">Fetch logs for a specific message</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Parameters</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <span class="param-name">messageId</span>
+                                            <span class="param-required">*</span>
+                                        </td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="param-description">The message ID to fetch logs for</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">[
+  {
+    <span class="key">"id"</span>: <span class="string">"log_abc123"</span>,
+    <span class="key">"type"</span>: <span class="string">"status_change"</span>,
+    <span class="key">"object"</span>: <span class="string">"message"</span>,
+    <span class="key">"message_id"</span>: <span class="string">"msg_1234567890"</span>,
+    <span class="key">"before_data"</span>: { <span class="key">"status"</span>: <span class="string">"CREATED"</span> },
+    <span class="key">"after_data"</span>: { <span class="key">"status"</span>: <span class="string">"QUEUED"</span> },
+    <span class="key">"created_at"</span>: <span class="string">"2024-01-15T10:00:00Z"</span>
+  }
+]</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Get Raw Data -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/admin/raw/{match?}</span>
+                        <span class="endpoint-description">Fetch raw storage data</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Parameters</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">match</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="param-description">Optional filter pattern for keys</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">[
+  {
+    <span class="key">"key"</span>: [<span class="string">"messages"</span>, <span class="string">"msg_1234567890"</span>],
+    <span class="key">"value"</span>: { ... }
+  }
+]</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Reset Data -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method delete">DELETE</span>
+                        <span class="endpoint-path">/admin/reset/{match?}</span>
+                        <span class="endpoint-description">Reset data (with optional table filter)</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Parameters</h4>
+                            <table class="parameters-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">match</span></td>
+                                        <td><span class="param-type">string</span></td>
+                                        <td><span class="param-description">Optional table name to reset (e.g., "logs" to reset only logs)</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"success"</span>: <span class="boolean">true</span>,
+  <span class="key">"message"</span>: <span class="string">"All data has been reset"</span>
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Section -->
+        <div class="api-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2 class="section-title">system</h2>
+                <span class="section-description">Health checks and system status</span>
+                <span class="expand-icon">▼</span>
+            </div>
+            
+            <div class="endpoints">
+                <!-- Ping -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/system/ping</span>
+                        <span class="endpoint-description">Simple health check (no auth required)</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">PONG</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Health -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method get">GET</span>
+                        <span class="endpoint-path">/system/health</span>
+                        <span class="endpoint-description">Detailed health status (no auth required)</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"status"</span>: <span class="string">"healthy"</span>,
+  <span class="key">"timestamp"</span>: <span class="string">"2024-01-15T10:30:00.000Z"</span>
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Migration Section -->
+        <div class="api-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2 class="section-title">migrate</h2>
+                <span class="section-description">Data migration and maintenance tools</span>
+                <span class="expand-icon">▼</span>
+            </div>
+            
+            <div class="endpoints">
+                <!-- KV to Turso -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/migrate/kv-to-turso</span>
+                        <span class="endpoint-description">Migrate data from KV to Turso storage</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Prerequisites</h4>
+                            <ul style="margin-left: 1rem; color: #586069; font-size: 0.813rem; line-height: 1.8;">
+                                <li>Both storage backends must be configured</li>
+                                <li>STORAGE_TYPE should be set to "KV"</li>
+                                <li>TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be set</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"success"</span>: <span class="boolean">true</span>,
+  <span class="key">"migrated"</span>: {
+    <span class="key">"messages"</span>: <span class="number">1234</span>,
+    <span class="key">"logs"</span>: <span class="number">5678</span>
+  }
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Initialize Stats -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/migrate/stats/initialize</span>
+                        <span class="endpoint-description">Initialize or rebuild statistics from existing messages</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Description</h4>
+                            <p style="color: #586069; font-size: 0.813rem; line-height: 1.6;">
+                                Rebuilds statistics from existing messages. Works with both KV and Turso storage backends.
+                                Safe to run multiple times. For KV storage, this creates/updates the stats key. For Turso storage,
+                                stats are always calculated dynamically.
+                            </p>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"success"</span>: <span class="boolean">true</span>,
+  <span class="key">"message"</span>: <span class="string">"Stats initialized from 1234 messages"</span>
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Utility Section -->
+        <div class="api-section">
+            <div class="section-header" onclick="toggleSection(this)">
+                <h2 class="section-title">util</h2>
+                <span class="section-description">Development and testing utilities</span>
+                <span class="expand-icon">▼</span>
+            </div>
+            
+            <div class="endpoints">
+                <!-- Seed Data -->
+                <div class="endpoint" onclick="toggleEndpoint(this)">
+                    <div class="endpoint-summary">
+                        <span class="method post">POST</span>
+                        <span class="endpoint-path">/util/seed</span>
+                        <span class="endpoint-description">Seed test data for development</span>
+                        <span class="lock-icon">🔒</span>
+                        <span class="expand-endpoint">▶</span>
+                    </div>
+                    <div class="endpoint-details">
+                        <div class="detail-section">
+                            <h4>Request Body</h4>
+                            <div class="example-section">
+                                <div class="example-header">Example - Realistic Distribution</div>
+                                <pre class="code-block">{
+  <span class="key">"count"</span>: <span class="number">100</span>,
+  <span class="key">"daysToSpread"</span>: <span class="number">7</span>,
+  <span class="key">"hourlyDistribution"</span>: {
+    <span class="key">"type"</span>: <span class="string">"realistic"</span>,
+    <span class="key">"peakHours"</span>: [<span class="number">9</span>, <span class="number">10</span>, <span class="number">11</span>, <span class="number">14</span>, <span class="number">15</span>, <span class="number">16</span>, <span class="number">17</span>],
+    <span class="key">"lowHours"</span>: [<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>, <span class="number">23</span>]
+  },
+  <span class="key">"statusDistribution"</span>: {
+    <span class="key">"SENT"</span>: <span class="number">70</span>,
+    <span class="key">"FAILED"</span>: <span class="number">15</span>,
+    <span class="key">"RETRY"</span>: <span class="number">5</span>,
+    <span class="key">"QUEUED"</span>: <span class="number">5</span>,
+    <span class="key">"CREATED"</span>: <span class="number">5</span>
+  }
+}</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Response</h4>
+                            <div class="example-section">
+                                <div class="example-header">200 - Success</div>
+                                <pre class="code-block">{
+  <span class="key">"success"</span>: <span class="boolean">true</span>,
+  <span class="key">"messagesCreated"</span>: <span class="number">100</span>,
+  <span class="key">"distribution"</span>: {
+    <span class="key">"SENT"</span>: <span class="number">70</span>,
+    <span class="key">"FAILED"</span>: <span class="number">15</span>,
+    <span class="key">"RETRY"</span>: <span class="number">5</span>,
+    <span class="key">"QUEUED"</span>: <span class="number">5</span>,
+    <span class="key">"CREATED"</span>: <span class="number">5</span>
+  }
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleSection(header) {
+            // Sections are always expanded, so this function is now a no-op
+            // Keeping it to avoid breaking onclick handlers
+        }
+        
+        function toggleEndpoint(endpoint) {
+            // Prevent toggling when clicking on the endpoint summary
+            if (event.target.closest('.endpoint-details')) {
+                return;
+            }
+            endpoint.classList.toggle('expanded');
+        }
+    </script>
+</body>
+</html>

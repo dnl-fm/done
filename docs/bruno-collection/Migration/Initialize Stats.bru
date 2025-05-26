@@ -1,0 +1,43 @@
+meta {
+  name: Initialize Stats
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{url}}/v1/migrate/stats/initialize
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  ## Initialize Statistics
+  
+  Initializes or rebuilds statistics from existing messages in the database.
+  Works with both KV and Turso storage backends.
+  
+  ### Use Cases
+  
+  - First time setup after migrating data
+  - Rebuilding stats if they become out of sync
+  - After bulk data imports
+  
+  ### Response
+  
+  ```json
+  {
+    "success": true,
+    "message": "Stats initialized from 1234 messages"
+  }
+  ```
+  
+  ### Notes
+  
+  - For KV storage: Creates/updates the stats key
+  - For Turso storage: Stats are always calculated dynamically
+  - Safe to run multiple times
+}

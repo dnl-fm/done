@@ -3,6 +3,7 @@ import { diff } from 'deep-object-diff';
 import { z } from 'zod';
 import { HasDatesSchema, SecondarySchema, SecondaryTypeSchema, SystemMessageSchema, SystemMessageTypeSchema } from '../../schemas/system-schema.ts';
 import { Security } from '../../utils/security.ts';
+import { Env } from '../../utils/env.ts';
 
 export abstract class AbstractKvStore {
   constructor(protected kv: Deno.Kv) {}
@@ -107,7 +108,17 @@ export abstract class AbstractKvStore {
 
       if (secondary.type === 'MANY') {
         const beforeRefs = await this._fetchSecondary(secondary.key);
-        if (beforeRefs) secondary.value = [...beforeRefs, ...secondary.value];
+        if (beforeRefs) {
+          // Limit the number of IDs to prevent exceeding KV size limits
+          const combined = [...beforeRefs, ...secondary.value];
+          // Keep only the most recent 1000 IDs (approximately 30KB)
+          if (combined.length > 1000) {
+            secondary.value = combined.slice(-1000);
+            console.warn(`Secondary index ${secondary.key.join('/')} truncated to 1000 entries`);
+          } else {
+            secondary.value = combined;
+          }
+        }
       }
 
       await this._addSecondary(secondary);
@@ -227,7 +238,14 @@ export abstract class AbstractKvStore {
   }
 
   private async _updatingSecondary(key: string[], value: string[]) {
-    const unqiueValue = [...new Set(value)]; // remove duplicates
+    let unqiueValue = [...new Set(value)]; // remove duplicates
+
+    // Limit the number of IDs to prevent exceeding KV size limits
+    if (unqiueValue.length > 1000) {
+      unqiueValue = unqiueValue.slice(-1000);
+      console.warn(`Secondary index ${key.join('/')} truncated to 1000 entries during update`);
+    }
+
     // console.log('- updating secondary', { key, value: unqiueValue });
     await this.kv.set(this.buildSecondaryKey(key), unqiueValue);
   }
@@ -248,7 +266,7 @@ export abstract class AbstractKvStore {
     // enqueue message
     await this.kv.enqueue(log);
 
-    if (Deno.env.get('ENABLE_LOGS') !== 'true') {
+    if (Env.get('ENABLE_LOGS') !== 'true') {
       return;
     }
 

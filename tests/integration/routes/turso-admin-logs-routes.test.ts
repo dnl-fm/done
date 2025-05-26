@@ -77,7 +77,6 @@ describe('Turso Admin Logs Routes', () => {
         message_id: message.id,
         before_data: {},
         after_data: { id: message.id, status: 'CREATED' },
-        created_at: new Date(),
       });
 
       await logsStore.create({
@@ -86,7 +85,6 @@ describe('Turso Admin Logs Routes', () => {
         message_id: message.id,
         before_data: { id: message.id, status: 'CREATED' },
         after_data: { id: message.id, status: 'QUEUED' },
-        created_at: new Date(),
       });
 
       const response = await app.request(`/${VERSION_STRING}/admin/logs`);
@@ -145,7 +143,6 @@ describe('Turso Admin Logs Routes', () => {
         message_id: message.id,
         before_data: {},
         after_data: { id: message.id, status: 'CREATED' },
-        created_at: new Date(Date.now() - 2000),
       });
 
       await logsStore.create({
@@ -154,7 +151,6 @@ describe('Turso Admin Logs Routes', () => {
         message_id: message.id,
         before_data: { id: message.id, status: 'CREATED' },
         after_data: { id: message.id, status: 'QUEUED' },
-        created_at: new Date(Date.now() - 1000),
       });
 
       // Create log for a different message (should not be returned)
@@ -178,7 +174,6 @@ describe('Turso Admin Logs Routes', () => {
         message_id: otherMessage.id,
         before_data: {},
         after_data: { id: otherMessage.id, status: 'CREATED' },
-        created_at: new Date(),
       });
 
       const response = await app.request(`/${VERSION_STRING}/admin/log/${message.id}`);
@@ -223,7 +218,6 @@ describe('Turso Admin Logs Routes', () => {
         message_id: message.id,
         before_data: {},
         after_data: { id: message.id, status: 'CREATED' },
-        created_at: new Date(),
       });
 
       // Verify logs exist
@@ -274,7 +268,6 @@ describe('Turso Admin Logs Routes', () => {
         message_id: message.id,
         before_data: {},
         after_data: { id: message.id, status: 'CREATED' },
-        created_at: new Date(),
       });
 
       // Reset all

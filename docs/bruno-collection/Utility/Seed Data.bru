@@ -1,0 +1,66 @@
+meta {
+  name: Seed Data
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/v1/util/seed
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "count": 100,
+    "daysToSpread": 7,
+    "hourlyDistribution": {
+      "type": "realistic",
+      "peakHours": [9, 10, 11, 14, 15, 16, 17],
+      "lowHours": [0, 1, 2, 3, 4, 5, 23]
+    },
+    "statusDistribution": {
+      "SENT": 70,
+      "FAILED": 15,
+      "RETRY": 5,
+      "QUEUED": 5,
+      "CREATED": 5
+    }
+  }
+}
+
+docs {
+  ## Seed Test Data
+  
+  Seeds the database with test messages for development and testing purposes.
+  
+  ### Parameters
+  
+  - `count` (optional): Number of messages to create (default: 100)
+  - `daysToSpread` (optional): Number of days to spread messages across (default: 7)
+  - `hourlyDistribution` (optional): Configuration for hour distribution
+    - `type`: "realistic" (default) or "uniform"
+    - `peakHours`: Array of peak hour numbers (0-23)
+    - `lowHours`: Array of low activity hour numbers (0-23)
+  - `statusDistribution` (optional): Percentage distribution of message statuses
+  
+  ### Response
+  
+  ```json
+  {
+    "success": true,
+    "messagesCreated": 100,
+    "distribution": {
+      "SENT": 70,
+      "FAILED": 15,
+      "RETRY": 5,
+      "QUEUED": 5,
+      "CREATED": 5
+    }
+  }
+  ```
+}

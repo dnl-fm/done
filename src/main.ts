@@ -4,6 +4,9 @@ import { KvAdminRoutes } from './routes/kv-admin-routes.ts';
 import { MessageRoutes } from './routes/message-routes.ts';
 import { SystemRoutes } from './routes/system-routes.ts';
 import { TursoAdminRoutes } from './routes/turso-admin-routes.ts';
+import { UtilityRoutes } from './routes/utility-routes.ts';
+import { DashboardRoutes } from './routes/dashboard-routes.ts';
+import { MigrationRoutes } from './routes/migration-routes.ts';
 import { AuthMiddleware } from './services/auth-middleware.ts';
 import { SystemMessage } from './services/storage/kv-store.ts';
 import { SqliteStore } from './services/storage/sqlite-store.ts';
@@ -15,9 +18,29 @@ import { VERSION_STRING } from './version.ts';
 
 // Initialize stores
 const kv = await Deno.openKv();
-const sqlite = await SqliteStore.create(Deno.env.get('TURSO_DB_URL')!, Deno.env.get('TURSO_DB_AUTH_TOKEN'));
-const messageStore = StoreFactory.getMessagesStore({ kv, sqlite });
+const storageType = StoreFactory.getStorageType();
+let sqlite = undefined;
+
+// Initialize SQLite if using Turso
+if (storageType === 'TURSO') {
+  const dbUrl = new URL(Env.get('TURSO_DB_URL'), import.meta.url);
+  const authToken = Env.get('TURSO_DB_AUTH_TOKEN');
+
+  // Create SqliteStore instance for migrations
+  const sqliteStore = new SqliteStore({ url: dbUrl, authToken });
+
+  console.log('Running database migrations...');
+  const { Migrations } = await import('./utils/migrations.ts');
+  const migrations = new Migrations(sqliteStore);
+  await migrations.migrate();
+  console.log('Migrations completed.');
+
+  // Get the client for store usage
+  sqlite = await sqliteStore.getClient();
+}
+
 const logsStore = StoreFactory.getLogsStore({ kv, sqlite });
+const messageStore = StoreFactory.getMessagesStore({ kv, sqlite }, logsStore);
 
 // Initialize Hono with Routes utility
 const hono = Routes.initHono();
@@ -69,18 +92,38 @@ kv.listenQueue(async (incoming: unknown) => {
 // routes
 
 // Create admin routes based on storage type
-const storageType = StoreFactory.getStorageType();
-const adminRoutes = storageType === 'KV' ? new KvAdminRoutes(messageStore, logsStore, kv) : new TursoAdminRoutes(messageStore, logsStore, sqlite);
+const adminRoutes = storageType === 'KV' ? new KvAdminRoutes(messageStore, logsStore, kv) : new TursoAdminRoutes(messageStore, logsStore, sqlite!);
 
-const routes = [
+// Register API routes with version prefix
+const apiRoutes = [
   new MessageRoutes(kv, messageStore),
   adminRoutes,
   new SystemRoutes(),
+  new UtilityRoutes(kv, sqlite),
+  new MigrationRoutes(kv, sqlite),
 ];
 
-for (const route of routes) {
+for (const route of apiRoutes) {
   hono.route(route.getBasePath(VERSION_STRING), route.getRoutes());
 }
+
+// Register dashboard without version prefix
+const dashboardRoutes = new DashboardRoutes();
+hono.route(dashboardRoutes.getBasePath(), dashboardRoutes.getRoutes());
+
+// Serve static files
+hono.get('/done.jpg', async (c) => {
+  try {
+    const file = await Deno.readFile('./done.jpg');
+    return c.body(file, 200, {
+      'Content-Type': 'image/jpeg',
+      'Cache-Control': 'public, max-age=86400', // Cache for 1 day
+    });
+  } catch (error) {
+    console.error('Error serving logo:', error);
+    return c.text('Logo not found', 404);
+  }
+});
 
 // ############################################
 

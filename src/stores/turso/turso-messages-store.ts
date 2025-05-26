@@ -1,12 +1,25 @@
 import { Client, Row } from 'libsql-core';
 import { err, ok, Result } from 'result';
 import { MessagesStoreInterface } from '../../interfaces/messages-store-interface.ts';
+import { LogsStoreInterface } from '../../interfaces/logs-store-interface.ts';
+import { StatsService } from '../../services/stats-service.ts';
 import { Dates } from '../../utils/dates.ts';
 import { Security } from '../../utils/security.ts';
 import { MESSAGE_STATUS, MessageData, MessageModel, MessageReceivedData } from '../kv/kv-message-model.ts';
+import { Env } from '../../utils/env.ts';
 
 export class TursoMessagesStore implements MessagesStoreInterface {
-  constructor(private sqlite: Client) {}
+  private statsService: StatsService;
+  private kv?: Deno.Kv;
+
+  constructor(
+    private sqlite: Client,
+    private logsStore?: LogsStoreInterface,
+    kv?: Deno.Kv,
+  ) {
+    this.statsService = new StatsService({ sqlite });
+    this.kv = kv;
+  }
 
   getStoreName(): string {
     return 'messages';
@@ -61,6 +74,35 @@ export class TursoMessagesStore implements MessagesStoreInterface {
       });
 
       if (result.rowsAffected === 1) {
+        // Update stats when message is created
+        await this.statsService.incrementStatus(message.status, message.publish_at);
+
+        // Create log if enabled
+        if (this.logsStore && Env.get('ENABLE_LOGS') === 'true') {
+          await this.logsStore.create({
+            type: 'STORE_CREATE_EVENT',
+            object: this.getStoreName(),
+            message_id: message.id,
+            before_data: null,
+            after_data: message,
+          });
+        }
+
+        // Enqueue message for state processing (to match KV behavior)
+        if (this.kv) {
+          const systemMessage = {
+            type: 'STORE_CREATE_EVENT',
+            object: this.getStoreName(),
+            data: { after: message },
+            id: `log_${Security.generateId()}`,
+            created_at: new Date(),
+          };
+          console.log(`[${new Date().toISOString()}] Turso enqueuing STORE_CREATE_EVENT for new message ${message.id}`);
+          await this.kv.enqueue(systemMessage);
+        } else {
+          console.warn(`[${new Date().toISOString()}] Turso store has no KV instance, cannot enqueue create event for message ${message.id}`);
+        }
+
         return ok(message);
       }
 
@@ -115,7 +157,16 @@ export class TursoMessagesStore implements MessagesStoreInterface {
   }
 
   async update(id: string, data: Partial<MessageData & { updated_at?: Date }>): Promise<Result<MessageModel, string>> {
+    console.log(`[${new Date().toISOString()}] TursoMessagesStore.update called for ${id} with data:`, data);
     try {
+      // Get current message to track status changes
+      const currentResult = await this.fetchOne(id);
+      if (currentResult.isErr()) {
+        console.error(`[${new Date().toISOString()}] TursoMessagesStore.update: message ${id} not found`);
+        return currentResult;
+      }
+      const currentMessage = currentResult.value;
+
       const setClauses: string[] = [];
       const args: Record<string, string | number | null> = { id };
 
@@ -159,10 +210,60 @@ export class TursoMessagesStore implements MessagesStoreInterface {
       });
 
       if (result.rowsAffected === 0) {
+        console.error(`[${new Date().toISOString()}] TursoMessagesStore.update: no rows affected for ${id}`);
         return err('Message not found');
       }
 
-      return this.fetchOne(id);
+      console.log(`[${new Date().toISOString()}] TursoMessagesStore.update: ${result.rowsAffected} rows updated`);
+
+      // Update stats if status changed
+      if (data.status && data.status !== currentMessage.status) {
+        console.log(`[${new Date().toISOString()}] TursoMessagesStore.update: status changed from ${currentMessage.status} to ${data.status}`);
+
+        // Update status counters
+        try {
+          await this.statsService.decrementStatus(currentMessage.status, currentMessage.publish_at);
+          await this.statsService.incrementStatus(data.status, currentMessage.publish_at);
+        } catch (statsError) {
+          console.error(`[${new Date().toISOString()}] TursoMessagesStore.update: stats update error:`, statsError);
+        }
+      }
+
+      // Get updated message for logging
+      console.log(`[${new Date().toISOString()}] TursoMessagesStore.update: fetching updated message`);
+      const updatedResult = await this.fetchOne(id);
+      if (updatedResult.isOk()) {
+        console.log(`[${new Date().toISOString()}] TursoMessagesStore.update: got updated message with status ${updatedResult.value.status}`);
+        // Create log if enabled
+        if (this.logsStore && Env.get('ENABLE_LOGS') === 'true') {
+          await this.logsStore.create({
+            type: 'STORE_UPDATE_EVENT',
+            object: this.getStoreName(),
+            message_id: id,
+            before_data: currentMessage,
+            after_data: updatedResult.value,
+          });
+        }
+
+        // Enqueue message for state processing (to match KV behavior)
+        if (this.kv) {
+          const systemMessage = {
+            type: 'STORE_UPDATE_EVENT',
+            object: this.getStoreName(),
+            data: { before: currentMessage, after: updatedResult.value },
+            id: `log_${Security.generateId()}`,
+            created_at: new Date(),
+          };
+          console.log(
+            `[${new Date().toISOString()}] Turso enqueuing STORE_UPDATE_EVENT for message ${id}, status change: ${currentMessage.status} -> ${updatedResult.value.status}`,
+          );
+          await this.kv.enqueue(systemMessage);
+        } else {
+          console.warn(`[${new Date().toISOString()}] Turso store has no KV instance, cannot enqueue state update for message ${id}`);
+        }
+      }
+
+      return updatedResult;
     } catch (error: unknown) {
       return err(`Database error: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -170,10 +271,17 @@ export class TursoMessagesStore implements MessagesStoreInterface {
 
   async delete(id: string): Promise<Result<boolean, string>> {
     try {
+      // Get message before deleting to update stats
+      const messageResult = await this.fetchOne(id);
+
       const result = await this.sqlite.execute({
         sql: 'DELETE FROM messages WHERE id = :id',
         args: { id },
       });
+
+      if (result.rowsAffected > 0 && messageResult.isOk()) {
+        await this.statsService.decrementStatus(messageResult.value.status, messageResult.value.publish_at);
+      }
 
       return ok(result.rowsAffected > 0);
     } catch (error: unknown) {

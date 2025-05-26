@@ -11,6 +11,7 @@ export class MessageStateManager {
 
   async handleState(message: SystemMessage) {
     const model = this.getModelFromMessage<MessageModel>(message);
+    console.log(`[${new Date().toISOString()}] MessageStateManager: handling ${message.type}, model status: ${model?.status}, model id: ${model?.id}`);
 
     // handle message type
     switch (message.type) {
@@ -25,8 +26,10 @@ export class MessageStateManager {
     }
 
     // handle model state
+    console.log(`[${new Date().toISOString()}] MessageStateManager: processing model state: ${model?.status}`);
     switch (model.status) {
       case 'CREATED':
+        console.log(`[${new Date().toISOString()}] MessageStateManager: calling stateCreated for ${model.id}`);
         await this.stateCreated(model);
         break;
       case 'QUEUED':
@@ -45,14 +48,17 @@ export class MessageStateManager {
         await this.stateDLQ(model);
         break;
       default:
+        console.warn(`[${new Date().toISOString()}] MessageStateManager: unknown status ${model?.status}`);
     }
   }
 
   private async stateCreated(model: MessageModel) {
     const today = new Date();
+    console.log(`[${new Date().toISOString()}] stateCreated: checking if should deliver now. publish_at: ${model.publish_at.getTime()}, now: ${today.getTime()}`);
 
     // send now
     if (model.publish_at.getTime() < today.getTime()) {
+      console.log(`[${new Date().toISOString()}] stateCreated: updating ${model.id} to DELIVER status`);
       await this.messageStore.update(model.id, { status: 'DELIVER' });
       return;
     }

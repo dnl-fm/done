@@ -1,1 +1,4 @@
 .env.local
+data/*.db
+data/*.db-shm
+data/*.db-wal

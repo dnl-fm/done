@@ -1,0 +1,30 @@
+meta {
+  name: Ping
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{url}}/v1/system/ping
+  body: none
+  auth: none
+}
+
+docs {
+  ## Ping Endpoint
+  
+  Simple health check endpoint that returns "PONG".
+  No authentication required.
+  
+  ### Response
+  
+  ```
+  PONG
+  ```
+  
+  ### Use Cases
+  
+  - Basic connectivity test
+  - Load balancer health checks
+  - Monitoring uptime
+}
