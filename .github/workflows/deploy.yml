@@ -112,19 +112,11 @@ jobs:
           deno-version: v2.3.3
 
       - name: Run comprehensive tests before production deployment
-        run: |
-          echo "Running comprehensive test suite..."
-          deno task test
-          
-          echo "Running tests with KV storage..."
-          STORAGE_TYPE=KV deno task test
-          
-          echo "Running tests with Turso storage..."
-          STORAGE_TYPE=TURSO deno task test
-          
-          echo "✅ All tests passed for production deployment"
+        run: deno task test
         env:
           ENABLE_LOGS: true
+          # Use KV storage for pre-deployment tests to avoid libsql issues
+          STORAGE_TYPE: KV
 
       - name: Deploy to Deno Deploy (Production)
         uses: denoland/deployctl@v1

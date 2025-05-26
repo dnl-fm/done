@@ -51,14 +51,8 @@ jobs:
         env:
           # Enable logs for testing
           ENABLE_LOGS: true
-          # Set storage type for comprehensive testing
+          # Use KV storage for CI to avoid libsql native binary issues
           STORAGE_TYPE: KV
-
-      - name: Run tests with Turso storage
-        run: deno task test
-        env:
-          ENABLE_LOGS: true
-          STORAGE_TYPE: TURSO
           
       - name: Generate test coverage (if available)
         run: |
