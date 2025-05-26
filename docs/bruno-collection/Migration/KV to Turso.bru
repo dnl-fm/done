@@ -1,0 +1,52 @@
+meta {
+  name: KV to Turso
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{url}}/v1/migrate/kv-to-turso
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  ## Migrate from KV to Turso
+  
+  Migrates all data from Deno KV storage to Turso SQLite storage.
+  
+  ### Prerequisites
+  
+  - Both storage backends must be configured
+  - `STORAGE_TYPE` should be set to `KV` when running this migration
+  - `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` must be configured
+  
+  ### Process
+  
+  1. Connects to both KV and Turso storage
+  2. Fetches all messages and logs from KV
+  3. Inserts data into Turso with proper foreign key relationships
+  4. Preserves all timestamps and data integrity
+  
+  ### Response
+  
+  ```json
+  {
+    "success": true,
+    "migrated": {
+      "messages": 1234,
+      "logs": 5678
+    }
+  }
+  ```
+  
+  ### Notes
+  
+  - This is a one-way migration
+  - Existing data in Turso will not be affected
+  - After migration, update `STORAGE_TYPE` to `TURSO`
+}

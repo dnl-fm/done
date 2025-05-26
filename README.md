@@ -423,6 +423,8 @@ With Turso, you get a globally distributed, production-ready setup that scales w
 
 Done provides comprehensive API endpoints to manage and monitor your message queue. These are your tools for inspecting data, debugging issues, and understanding your message flow.
 
+📚 **[View Interactive API Documentation](https://htmlpreview.github.io/?https://github.com/dnl-fm/done/blob/main/docs/api-documentation.html)** - A complete Swagger-style reference with all endpoints, parameters, and examples!
+
 ### Core Message Operations
 
 #### 🚀 **Send Messages**
