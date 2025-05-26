@@ -15,7 +15,7 @@ import { VERSION_STRING } from './version.ts';
 
 // Initialize stores
 const kv = await Deno.openKv();
-const sqlite = await SqliteStore.create(Deno.env.get('TURSO_DB_URL') || ':memory:', Deno.env.get('TURSO_DB_AUTH_TOKEN') || undefined);
+const sqlite = await SqliteStore.create(Deno.env.get('TURSO_DB_URL')!, Deno.env.get('TURSO_DB_AUTH_TOKEN'));
 const messageStore = StoreFactory.getMessagesStore({ kv, sqlite });
 const logsStore = StoreFactory.getLogsStore({ kv, sqlite });
 
