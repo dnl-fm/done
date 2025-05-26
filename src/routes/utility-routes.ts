@@ -274,21 +274,17 @@ export class UtilityRoutes {
                   created_at: new Date(err.timestamp),
                 })),
               };
-              
+
               // Set the message directly in KV
               await this.kv.set(['stores', 'messages', messageId], kvMessage);
-              
+
               // Add secondary indexes
               const statusIndex = await this.kv.get<string[]>(['stores', 'messages', 'secondaries', 'BY_STATUS', status]);
-              await this.kv.set(['stores', 'messages', 'secondaries', 'BY_STATUS', status], 
-                [...(statusIndex?.value || []), messageId]
-              );
-              
+              await this.kv.set(['stores', 'messages', 'secondaries', 'BY_STATUS', status], [...(statusIndex?.value || []), messageId]);
+
               const dateKey = createdAt.toISOString().split('T')[0];
               const dateIndex = await this.kv.get<string[]>(['stores', 'messages', 'secondaries', 'BY_PUBLISH_DATE', dateKey]);
-              await this.kv.set(['stores', 'messages', 'secondaries', 'BY_PUBLISH_DATE', dateKey],
-                [...(dateIndex?.value || []), messageId]
-              );
+              await this.kv.set(['stores', 'messages', 'secondaries', 'BY_PUBLISH_DATE', dateKey], [...(dateIndex?.value || []), messageId]);
             } else if (storageType === 'TURSO' && this.sqlite) {
               // For TURSO storage, insert directly to preserve created_at timestamp
               await this.sqlite.execute({
@@ -308,7 +304,7 @@ export class UtilityRoutes {
                   updated_at: createdAt.toISOString(),
                 },
               });
-              
+
               // Create log entry for message creation
               const logId = `log_${Security.generateId()}`;
               await this.sqlite.execute({
@@ -325,27 +321,27 @@ export class UtilityRoutes {
                   created_at: createdAt.toISOString(),
                 },
               });
-              
+
               // Create state change logs for all messages that should have transitions
-              const shouldHaveTransitions = (messageConfig.type === 'past' && status !== 'CREATED') || 
-                                          (messageConfig.type === 'immediate') ||
-                                          (messageConfig.type === 'scheduled' && new Date(publishAt) <= new Date());
-              
+              const shouldHaveTransitions = (messageConfig.type === 'past' && status !== 'CREATED') ||
+                (messageConfig.type === 'immediate') ||
+                (messageConfig.type === 'scheduled' && new Date(publishAt) <= new Date());
+
               if (shouldHaveTransitions) {
                 // Simulate state transitions for realistic log history
                 const transitions: Array<{ from: string; to: string; time: Date }> = [];
-                
+
                 // Most transitions should happen within the same hour as creation
                 let currentTime = new Date(createdAt);
-                
+
                 // All messages start as CREATED
                 transitions.push({ from: 'CREATED', to: 'QUEUED', time: new Date(currentTime.getTime() + 30000) }); // 30 seconds later
-                
+
                 if (status === 'SENT' || status === 'DLQ' || status === 'RETRY') {
                   // Add DELIVER state - within 5 minutes
                   currentTime = new Date(currentTime.getTime() + 300000); // 5 minutes after creation
                   transitions.push({ from: 'QUEUED', to: 'DELIVER', time: currentTime });
-                  
+
                   if (status === 'SENT') {
                     // Success case - complete within 10 minutes
                     currentTime = new Date(currentTime.getTime() + 300000); // Another 5 minutes
@@ -354,30 +350,30 @@ export class UtilityRoutes {
                     // Failed delivery - first retry within 15 minutes
                     currentTime = new Date(currentTime.getTime() + 600000); // 10 minutes
                     transitions.push({ from: 'DELIVER', to: 'RETRY', time: currentTime });
-                    
+
                     if (status === 'DLQ' && retryCount > 0) {
                       // Multiple retries before DLQ - exponential backoff
                       for (let i = 1; i < retryCount && i < 3; i++) {
                         // Exponential backoff: 15min, 30min, 60min
-                        currentTime = new Date(currentTime.getTime() + (900000 * Math.pow(2, i-1))); // 15min * 2^(i-1)
+                        currentTime = new Date(currentTime.getTime() + (900000 * Math.pow(2, i - 1))); // 15min * 2^(i-1)
                         transitions.push({ from: 'RETRY', to: 'DELIVER', time: currentTime });
                         currentTime = new Date(currentTime.getTime() + 300000); // 5 min delivery attempt
                         transitions.push({ from: 'DELIVER', to: 'RETRY', time: currentTime });
                       }
-                      
+
                       // Final transition to DLQ after last retry
                       currentTime = new Date(currentTime.getTime() + 1800000); // 30 minutes after last retry
                       transitions.push({ from: 'RETRY', to: 'DLQ', time: currentTime });
                     }
                   }
                 }
-                
+
                 // Create log entries for each transition
                 for (const transition of transitions) {
                   const transitionLogId = `log_${Security.generateId()}`;
                   const beforeState = { ...message, status: transition.from };
                   const afterState = { ...message, status: transition.to };
-                  
+
                   await this.sqlite.execute({
                     sql: `INSERT INTO logs (
                       id, type, object, message_id, before_data, after_data, created_at
@@ -451,35 +447,164 @@ export class UtilityRoutes {
     // Realistic names for better dashboard appearance
     const firstNames = ['Emma', 'Liam', 'Olivia', 'Noah', 'Ava', 'Ethan', 'Sophia', 'Mason', 'Isabella', 'William', 'Mia', 'James', 'Charlotte', 'Benjamin', 'Amelia'];
     const lastNames = [
-      'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez',
-      'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor',
-      'Moore', 'Jackson', 'Martin', 'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez',
-      'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker', 'Young', 'Allen', 'King', 'Wright',
-      'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores', 'Green', 'Adams', 'Nelson', 'Baker',
-      'Hall', 'Rivera', 'Campbell', 'Mitchell', 'Carter', 'Roberts'
+      'Johnson',
+      'Williams',
+      'Brown',
+      'Jones',
+      'Garcia',
+      'Miller',
+      'Davis',
+      'Rodriguez',
+      'Martinez',
+      'Hernandez',
+      'Lopez',
+      'Gonzalez',
+      'Wilson',
+      'Anderson',
+      'Thomas',
+      'Taylor',
+      'Moore',
+      'Jackson',
+      'Martin',
+      'Lee',
+      'Perez',
+      'Thompson',
+      'White',
+      'Harris',
+      'Sanchez',
+      'Clark',
+      'Ramirez',
+      'Lewis',
+      'Robinson',
+      'Walker',
+      'Young',
+      'Allen',
+      'King',
+      'Wright',
+      'Scott',
+      'Torres',
+      'Nguyen',
+      'Hill',
+      'Flores',
+      'Green',
+      'Adams',
+      'Nelson',
+      'Baker',
+      'Hall',
+      'Rivera',
+      'Campbell',
+      'Mitchell',
+      'Carter',
+      'Roberts',
     ];
-    const companies = ['TechCorp', 'GlobalSoft', 'DataSystems', 'CloudWorks', 'NetSolutions', 'InfoTech', 'DigitalHub', 'CyberFlow', 'WebMasters', 'AppDynamics', 'SystemPro', 'TechFlow', 'DataSync', 'CloudBase', 'NetForce', 'InfoStream', 'DigitalCore', 'CyberTech', 'WebFlow', 'AppStream', 'InnovateTech', 'FutureSoft', 'SmartSystems', 'NextGen', 'TechPulse'];
+    const companies = [
+      'TechCorp',
+      'GlobalSoft',
+      'DataSystems',
+      'CloudWorks',
+      'NetSolutions',
+      'InfoTech',
+      'DigitalHub',
+      'CyberFlow',
+      'WebMasters',
+      'AppDynamics',
+      'SystemPro',
+      'TechFlow',
+      'DataSync',
+      'CloudBase',
+      'NetForce',
+      'InfoStream',
+      'DigitalCore',
+      'CyberTech',
+      'WebFlow',
+      'AppStream',
+      'InnovateTech',
+      'FutureSoft',
+      'SmartSystems',
+      'NextGen',
+      'TechPulse',
+    ];
     const products = [
-      'Analytics Dashboard', 'Cloud Storage', 'API Gateway', 'Database Manager', 'Security Suite',
-      'Project Tracker', 'Email Service', 'Chat Platform', 'Video Streaming', 'File Sync',
-      'Code Editor', 'Task Manager', 'CRM System', 'Inventory Tool', 'Payment Gateway',
-      'Search Engine', 'Content Platform', 'Mobile SDK', 'DevOps Suite', 'AI Assistant'
+      'Analytics Dashboard',
+      'Cloud Storage',
+      'API Gateway',
+      'Database Manager',
+      'Security Suite',
+      'Project Tracker',
+      'Email Service',
+      'Chat Platform',
+      'Video Streaming',
+      'File Sync',
+      'Code Editor',
+      'Task Manager',
+      'CRM System',
+      'Inventory Tool',
+      'Payment Gateway',
+      'Search Engine',
+      'Content Platform',
+      'Mobile SDK',
+      'DevOps Suite',
+      'AI Assistant',
     ];
     const cities = [
-      'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio',
-      'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville', 'Fort Worth', 'Columbus',
-      'San Francisco', 'Charlotte', 'Indianapolis', 'Seattle', 'Denver', 'Washington DC',
-      'Boston', 'El Paso', 'Detroit', 'Nashville', 'Portland', 'Memphis', 'Oklahoma City',
-      'Las Vegas', 'Louisville', 'Baltimore', 'Milwaukee', 'Albuquerque', 'Tucson', 'Fresno',
-      'Mesa', 'Sacramento', 'Atlanta', 'Kansas City', 'Colorado Springs', 'Miami', 'Raleigh',
-      'Omaha', 'Long Beach', 'Virginia Beach', 'Oakland', 'Minneapolis', 'Tulsa', 'Arlington',
-      'Tampa', 'New Orleans'
+      'New York',
+      'Los Angeles',
+      'Chicago',
+      'Houston',
+      'Phoenix',
+      'Philadelphia',
+      'San Antonio',
+      'San Diego',
+      'Dallas',
+      'San Jose',
+      'Austin',
+      'Jacksonville',
+      'Fort Worth',
+      'Columbus',
+      'San Francisco',
+      'Charlotte',
+      'Indianapolis',
+      'Seattle',
+      'Denver',
+      'Washington DC',
+      'Boston',
+      'El Paso',
+      'Detroit',
+      'Nashville',
+      'Portland',
+      'Memphis',
+      'Oklahoma City',
+      'Las Vegas',
+      'Louisville',
+      'Baltimore',
+      'Milwaukee',
+      'Albuquerque',
+      'Tucson',
+      'Fresno',
+      'Mesa',
+      'Sacramento',
+      'Atlanta',
+      'Kansas City',
+      'Colorado Springs',
+      'Miami',
+      'Raleigh',
+      'Omaha',
+      'Long Beach',
+      'Virginia Beach',
+      'Oakland',
+      'Minneapolis',
+      'Tulsa',
+      'Arlington',
+      'Tampa',
+      'New Orleans',
     ];
     const countries = ['US', 'CA', 'UK', 'DE', 'FR', 'JP', 'AU', 'BR', 'IN', 'CN', 'MX', 'ES', 'IT', 'NL', 'SE', 'CH', 'NO', 'DK', 'FI', 'BE'];
 
     const timestamp = new Date().toISOString();
     const randomNum = Math.floor(Math.random() * 10000);
-    const uuid = `${session.toUpperCase()}-mb57xy${String.fromCharCode(97 + Math.floor(Math.random() * 26))}${String.fromCharCode(97 + Math.floor(Math.random() * 26))}-${randomNum % 1000}`;
+    const uuid = `${session.toUpperCase()}-mb57xy${String.fromCharCode(97 + Math.floor(Math.random() * 26))}${String.fromCharCode(97 + Math.floor(Math.random() * 26))}-${
+      randomNum % 1000
+    }`;
 
     // Generate consistent data
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
@@ -504,7 +629,7 @@ export class UtilityRoutes {
             productName: product,
             quantity: Math.floor(Math.random() * 5) + 1,
             price: (Math.random() * 500 + 50).toFixed(2),
-          }
+          },
         ],
         totalAmount: (Math.random() * 1000 + 100).toFixed(2),
         currency: 'USD',

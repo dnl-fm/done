@@ -118,7 +118,7 @@ export class MigrationRoutes {
 
         if (storageType === 'TURSO' && this.sqlite) {
           statsService = new StatsService({ sqlite: this.sqlite });
-          
+
           // Get all messages
           const result = await this.sqlite.execute('SELECT status, publish_at FROM messages');
           const messages = result.rows.map((row) => ({
@@ -130,11 +130,11 @@ export class MigrationRoutes {
           messageCount = messages.length;
         } else if (storageType === 'KV' && this.kv) {
           statsService = new StatsService({ kv: this.kv });
-          
+
           // Collect all messages from KV
           const messages: Array<{ status: string; publish_at: Date }> = [];
           const messageEntries = this.kv.list({ prefix: ['stores', 'messages'] });
-          
+
           for await (const entry of messageEntries) {
             if (entry.key[2] !== 'secondaries' && entry.value && typeof entry.value === 'object') {
               const msg = entry.value as Record<string, unknown>;
@@ -144,7 +144,7 @@ export class MigrationRoutes {
               });
             }
           }
-          
+
           await statsService.initializeFromMessages(messages);
           messageCount = messages.length;
         } else {

@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Context, Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { StoreClient } from '../services/dashboard/store-client.ts';
 import { Env } from '../utils/env.ts';
@@ -167,7 +167,7 @@ export class DashboardRoutes {
     `;
   }
 
-  private isAuthenticated(c: any): boolean {
+  private isAuthenticated(c: Context): boolean {
     const sessionToken = getCookie(c, 'dashboard_session');
     if (!sessionToken) return false;
 
@@ -180,8 +180,8 @@ export class DashboardRoutes {
     return true;
   }
 
-  private requireAuth(handler: any) {
-    return async (c: any) => {
+  private requireAuth(handler: (c: Context) => Promise<Response>) {
+    return (c: Context) => {
       if (!this.isAuthenticated(c)) {
         return c.redirect('/dashboard/login');
       }
@@ -244,7 +244,7 @@ export class DashboardRoutes {
     // Dashboard overview (protected)
     this.hono.get(
       '/',
-      this.requireAuth(async (c: any) => {
+      this.requireAuth(async (c: Context) => {
         try {
           const stats = await this.client.getStats();
           const deliveryRate = stats.total > 0 ? ((stats.sent / stats.total) * 100).toFixed(1) : '0.0';
@@ -647,7 +647,7 @@ export class DashboardRoutes {
     // Messages list (protected)
     this.hono.get(
       '/messages',
-      this.requireAuth(async (c: any) => {
+      this.requireAuth(async (c: Context) => {
         try {
           const page = parseInt(c.req.query('page') || '1');
           const limit = 25;
@@ -857,7 +857,7 @@ export class DashboardRoutes {
     // Individual message detail (protected)
     this.hono.get(
       '/message/:id',
-      this.requireAuth(async (c: any) => {
+      this.requireAuth(async (c: Context) => {
         try {
           const messageId = c.req.param('id');
           const page = c.req.query('page') || '1';
@@ -1131,7 +1131,7 @@ export class DashboardRoutes {
     // Handle message recreation (protected)
     this.hono.post(
       '/message/:id/recreate',
-      this.requireAuth(async (c: any) => {
+      this.requireAuth(async (c: Context) => {
         try {
           const messageId = c.req.param('id');
           const page = c.req.query('page') || '1';

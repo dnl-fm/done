@@ -70,7 +70,6 @@ export class TursoAdminRoutes {
       }
     });
 
-
     this.routes.get('/raw/:match?', async (c: Context) => {
       const match = c.req.param('match');
 
