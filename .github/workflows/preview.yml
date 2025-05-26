@@ -17,8 +17,8 @@ jobs:
       pull-requests: write # For PR comments
     
     environment:
-      name: preview-pr-${{ github.event.number }}
-      url: https://done-preview-pr-${{ github.event.number }}.deno.dev
+      name: preview
+      url: https://done-light.deno.dev
       
     steps:
       - name: Checkout code
@@ -38,7 +38,7 @@ jobs:
       - name: Deploy preview to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: "done-preview-pr-${{ github.event.number }}"
+          project: "done-light"
           entrypoint: "deploy.ts"
           root: "."
           include: "deno.json"
@@ -62,7 +62,7 @@ jobs:
           sleep 20
           
           # Health check
-          PREVIEW_URL="https://done-preview-pr-${{ github.event.number }}.deno.dev"
+          PREVIEW_URL="https://done-light.deno.dev"
           if curl -f "$PREVIEW_URL/v1/system/ping"; then
             echo "✅ Preview deployment is healthy"
             echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV

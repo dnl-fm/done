@@ -33,7 +33,7 @@ jobs:
     
     environment:
       name: staging
-      url: https://done-staging.deno.dev
+      url: https://done-light.deno.dev
       
     steps:
       - name: Checkout code
@@ -53,7 +53,7 @@ jobs:
       - name: Deploy to Deno Deploy (Staging)
         uses: denoland/deployctl@v1
         with:
-          project: "done-staging" # Your Deno Deploy staging project name
+          project: "done-light" # Deno Deploy project name
           entrypoint: "deploy.ts"
           root: "."
           include: "deno.json"
@@ -80,7 +80,7 @@ jobs:
           
           # Health check with retry
           for i in {1..5}; do
-            if curl -f "https://done-staging.deno.dev/v1/system/ping"; then
+            if curl -f "https://done-light.deno.dev/v1/system/ping"; then
               echo "✅ Staging deployment is healthy"
               break
             else
@@ -108,7 +108,7 @@ jobs:
     
     environment:
       name: production
-      url: https://done.deno.dev
+      url: https://done-light.deno.dev
       
     steps:
       - name: Checkout code
@@ -129,7 +129,7 @@ jobs:
       - name: Deploy to Deno Deploy (Production)
         uses: denoland/deployctl@v1
         with:
-          project: "done-production" # Your Deno Deploy production project name
+          project: "done-light" # Deno Deploy project name
           entrypoint: "deploy.ts"
           root: "."
           include: "deno.json"
@@ -157,7 +157,7 @@ jobs:
           
           # Health check with retry
           for i in {1..10}; do
-            if curl -f "https://done.deno.dev/v1/system/ping"; then
+            if curl -f "https://done-light.deno.dev/v1/system/ping"; then
               echo "✅ Production deployment is healthy"
               break
             else
@@ -176,12 +176,12 @@ jobs:
           echo "Running post-deployment smoke tests..."
           
           # Test system endpoints
-          curl -f "https://done.deno.dev/v1/system/ping" || exit 1
+          curl -f "https://done-light.deno.dev/v1/system/ping" || exit 1
           
           # Test with auth (using a test token if available)
           if [ ! -z "${{ secrets.PRODUCTION_TEST_TOKEN }}" ]; then
             curl -f -H "Authorization: Bearer ${{ secrets.PRODUCTION_TEST_TOKEN }}" \
-              "https://done.deno.dev/v1/system/health" || exit 1
+              "https://done-light.deno.dev/v1/system/health" || exit 1
           fi
           
           echo "✅ Smoke tests passed"
@@ -190,7 +190,7 @@ jobs:
         run: |
           echo "🚀 Production deployment successful!"
           echo "📊 Application metrics will be available at the monitoring dashboard"
-          echo "🔗 API Documentation: https://done.deno.dev/v1/system/ping"
+          echo "🔗 API Documentation: https://done-light.deno.dev/v1/system/ping"
 
   rollback:
     name: Emergency Rollback
