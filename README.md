@@ -18,7 +18,7 @@ __Key features:__
 ## Content
 
 - [Introduction](#introduction)
-- [Features](#features)
+- [Storage](#storage)
 - [What about Deno's native queue?](#what-about-denos-native-queue)
 - [Quick Start](#quick-start)
 - [Setup on Deno Deploy](#setup-on-deno-deploy)
@@ -42,7 +42,7 @@ Embrace the open-source simplicity with Done. Queue up, have fun, and get it don
 - 🧰 No-Frills, All Thrills: We've cut the fluff, leaving you with a lean, mean, message-queuing machine.
 - 🦕 Deno-Deploy-Powered: With its foundation in Deno, Done is as awesome as a dinosaur rocking shades. That's right, we're keeping it that cool ;)
 
-## Features
+## Storage
 
 ### Storage Options
 
