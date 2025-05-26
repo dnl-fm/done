@@ -44,8 +44,6 @@ Embrace the open-source simplicity with Done. Queue up, have fun, and get it don
 
 ## Storage
 
-### Storage Options
-
 Done supports two storage backends, each with distinct strengths:
 
 #### 🏆 **Turso (Recommended for Production)**
