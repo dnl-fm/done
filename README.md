@@ -27,6 +27,10 @@ __Key features:__
   - [Administrative & Monitoring Tools](#administrative--monitoring-tools)
   - [Testing & Development](#testing--development)
   - [Expected API Responses](#expected-api-responses)
+- [Dashboard](#dashboard)
+  - [Features](#features)
+  - [Authentication](#authentication)
+  - [Dashboard Views](#dashboard-views)
 - [Roadmap](#roadmap)
 - [What about Deno's native queue?](#what-about-denos-native-queue)
 - [Credits](#credits)
@@ -512,17 +516,48 @@ All endpoints are documented as a [Bruno collection](docs/bruno-collection/) wit
 
 These endpoints give you complete visibility into your message queue operations - perfect for monitoring, debugging, and understanding your application's messaging patterns! 🔍
 
+## Dashboard
+
+Done comes with a built-in web dashboard for monitoring and managing your message queue! Access it at `/dashboard` on your deployment.
+
+<img src="dashboard.png" alt="Done Dashboard" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+### Features
+
+- **Real-time Statistics**: Monitor message counts by status, success rates, and failure rates
+- **7-Day Message Trend**: Visualize incoming, sent, and failed messages over the past week
+- **Hourly State Distribution**: See how messages progress through states throughout the day
+- **Message Browser**: Search and inspect individual messages with full details
+- **Message Recreation**: Easily recreate failed messages with one click
+- **Activity Timeline**: Track the complete lifecycle of each message
+
+### Authentication
+
+The dashboard is protected by authentication. Use your `AUTH_TOKEN` to log in:
+
+1. Navigate to `/dashboard`
+2. Enter your `AUTH_TOKEN` (same as API authentication)
+3. Session lasts 24 hours with secure HTTP-only cookies
+4. Logout available from the dashboard header
+
+### Dashboard Views
+
+- **Overview**: High-level metrics and charts showing system health
+- **Messages**: Browse all messages with filtering and pagination
+- **Message Details**: Deep dive into individual messages with complete history
+
+The dashboard provides the visibility you need to monitor your message queue operations effectively!
+
 ## Roadmap
 
 We're continuously working to make Done even better! Here are some exciting features on our roadmap:
 
+- [x] **Modern Dashboard**: ✅ Implemented! A clean analytics dashboard with real-time statistics and message management
 - [ ] **Storage Backend Migration**: Seamlessly migrate data between KV and Turso storage backends
 - [ ] **Data Export/Import**: Tools to backup and restore your message data
-- [ ] **Modern Dashboard**: A sleek, dark-themed analytics dashboard with real-time statistics, message status funnel visualization, and performance metrics (similar to modern analytics platforms)
-- [ ] **Real-time Monitoring**: Live updates of message status and queue health
-- [ ] **Message Management**: Web interface to inspect, retry, or cancel messages
-- [ ] **Analytics Dashboard**: Visual insights into message patterns and performance metrics
+- [ ] **Enhanced Dashboard Features**: Dark theme, real-time updates, and advanced filtering
 - [ ] **Message Search**: Full-text search capabilities using Orama Cloud for finding messages quickly
+- [ ] **Webhook Management**: UI for managing webhook endpoints and retry policies
 
 Want to contribute to any of these features? We'd love your help! Check out our [GitHub repository](https://github.com/dnl-fm/done) or join us on [Discord](https://discord.gg/JEYJbQgnWp).
 

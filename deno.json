@@ -24,6 +24,11 @@
     "stats:init": "sh -c \"curl -X POST -H 'Authorization: Bearer '$AUTH_TOKEN http://localhost:3001/v1/util/stats/initialize\"",
     "migrate:kv-to-turso": "sh -c \"curl -X POST -H 'Authorization: Bearer '$AUTH_TOKEN http://localhost:3001/v1/util/migrate/kv-to-turso\""
   },
+  "test": {
+    "include": [
+      "tests/**/*.test.ts"
+    ]
+  },
   "lint": {
     "include": [
       "src/",

@@ -131,11 +131,15 @@ export class DashboardRoutes {
           <p class="mt-2 text-sm text-gray-600">Enter your authentication token to continue</p>
         </div>
         <form class="mt-8 space-y-6" method="POST" action="/dashboard/login">
-          ${error ? `
+          ${
+      error
+        ? `
             <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               ${error}
             </div>
-          ` : ''}
+          `
+        : ''
+    }
           <div>
             <label for="token" class="block text-sm font-medium text-gray-700">Authentication Token</label>
             <input
@@ -166,13 +170,13 @@ export class DashboardRoutes {
   private isAuthenticated(c: any): boolean {
     const sessionToken = getCookie(c, 'dashboard_session');
     if (!sessionToken) return false;
-    
+
     const expiry = this.sessionTokens.get(sessionToken);
     if (!expiry || expiry < Date.now()) {
       this.sessionTokens.delete(sessionToken);
       return false;
     }
-    
+
     return true;
   }
 
@@ -198,13 +202,13 @@ export class DashboardRoutes {
     this.hono.post('/login', async (c) => {
       const body = await c.req.parseBody();
       const token = body.token as string;
-      
+
       if (token === this.authToken) {
         // Create session
         const sessionToken = Security.generateId();
         const expiry = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
         this.sessionTokens.set(sessionToken, expiry);
-        
+
         // Set cookie
         setCookie(c, 'dashboard_session', sessionToken, {
           httpOnly: true,
@@ -213,7 +217,7 @@ export class DashboardRoutes {
           maxAge: 86400, // 24 hours in seconds
           path: '/',
         });
-        
+
         return c.redirect('/dashboard');
       } else {
         return c.html(this.generateLoginPage('Invalid authentication token'), 401);
@@ -226,7 +230,7 @@ export class DashboardRoutes {
       if (sessionToken) {
         this.sessionTokens.delete(sessionToken);
       }
-      
+
       setCookie(c, 'dashboard_session', '', {
         httpOnly: true,
         secure: Env.get('DENO_ENV') === 'production',
@@ -234,17 +238,19 @@ export class DashboardRoutes {
         maxAge: 0,
         path: '/',
       });
-      
+
       return c.redirect('/dashboard/login');
     });
     // Dashboard overview (protected)
-    this.hono.get('/', this.requireAuth(async (c: any) => {
-      try {
-        const stats = await this.client.getStats();
-        const deliveryRate = stats.total > 0 ? ((stats.sent / stats.total) * 100).toFixed(1) : '0.0';
-        const errorRate = stats.total > 0 ? (((stats.dlq + stats.failed) / stats.total) * 100).toFixed(1) : '0.0';
+    this.hono.get(
+      '/',
+      this.requireAuth(async (c: any) => {
+        try {
+          const stats = await this.client.getStats();
+          const deliveryRate = stats.total > 0 ? ((stats.sent / stats.total) * 100).toFixed(1) : '0.0';
+          const errorRate = stats.total > 0 ? (((stats.dlq + stats.failed) / stats.total) * 100).toFixed(1) : '0.0';
 
-        const content = `
+          const content = `
           <div class="px-4 py-0 sm:px-0">
             <!-- Tab Navigation -->
             <div class="mb-6">
@@ -623,42 +629,45 @@ export class DashboardRoutes {
           </div>
         `;
 
-        return c.html(this.generateHTML('Dashboard - Done', content));
-      } catch (error) {
-        console.error('Dashboard error:', error);
-        const content = `
+          return c.html(this.generateHTML('Dashboard - Done', content));
+        } catch (error) {
+          console.error('Dashboard error:', error);
+          const content = `
           <div class="px-4 py-6 sm:px-0">
             <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               <strong>Error:</strong> ${error instanceof Error ? error.message : 'Unknown error'}
             </div>
           </div>
         `;
-        return c.html(this.generateHTML('Error - Done Dashboard', content));
-      }
-    }));
+          return c.html(this.generateHTML('Error - Done Dashboard', content));
+        }
+      }),
+    );
 
     // Messages list (protected)
-    this.hono.get('/messages', this.requireAuth(async (c: any) => {
-      try {
-        const page = parseInt(c.req.query('page') || '1');
-        const limit = 25;
-        const offset = (page - 1) * limit;
+    this.hono.get(
+      '/messages',
+      this.requireAuth(async (c: any) => {
+        try {
+          const page = parseInt(c.req.query('page') || '1');
+          const limit = 25;
+          const offset = (page - 1) * limit;
 
-        const result = await this.client.getMessages({ limit, offset });
-        const { messages, total } = result;
+          const result = await this.client.getMessages({ limit, offset });
+          const { messages, total } = result;
 
-        // Calculate pagination info
-        const totalPages = Math.ceil(total / limit);
-        const pagination = {
-          total,
-          page,
-          totalPages,
-          hasPrev: page > 1,
-          hasNext: page < totalPages,
-        };
+          // Calculate pagination info
+          const totalPages = Math.ceil(total / limit);
+          const pagination = {
+            total,
+            page,
+            totalPages,
+            hasPrev: page > 1,
+            hasNext: page < totalPages,
+          };
 
-        const messagesHTML = messages && messages.length > 0
-          ? messages.map((msg) => `
+          const messagesHTML = messages && messages.length > 0
+            ? messages.map((msg) => `
           <tr class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
               <a href="/dashboard/message/${msg.id}?page=${page}" class="text-blue-600 hover:text-blue-900">
@@ -680,9 +689,9 @@ export class DashboardRoutes {
             </td>
           </tr>
         `).join('')
-          : '';
+            : '';
 
-        const content = `
+          const content = `
           <div class="px-4 py-0 sm:px-0">
             <!-- Tab Navigation -->
             <div class="mb-8">
@@ -724,33 +733,33 @@ export class DashboardRoutes {
             </div>
             
             ${
-          pagination
-            ? `
+            pagination
+              ? `
             <!-- Pagination -->
             <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
               <div class="flex-1 flex justify-between sm:hidden">
                 ${
-              pagination.hasPrev
-                ? `
+                pagination.hasPrev
+                  ? `
                   <a href="/dashboard/messages?page=${
-                  page - 1
-                }" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    page - 1
+                  }" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     Previous
                   </a>
                 `
-                : ''
-            }
+                  : ''
+              }
                 ${
-              pagination.hasNext
-                ? `
+                pagination.hasNext
+                  ? `
                   <a href="/dashboard/messages?page=${
-                  page + 1
-                }" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    page + 1
+                  }" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                     Next
                   </a>
                 `
-                : ''
-            }
+                  : ''
+              }
               </div>
               <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
@@ -767,95 +776,98 @@ export class DashboardRoutes {
                 <div>
                   <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                     ${
-              pagination.hasPrev
-                ? `
+                pagination.hasPrev
+                  ? `
                       <a href="/dashboard/messages?page=${
-                  page - 1
-                }" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    page - 1
+                  }" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                         <span class="sr-only">Previous</span>
                         <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                           <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                         </svg>
                       </a>
                     `
-                : ''
-            }
+                  : ''
+              }
                     
                     ${
-              Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
-                const pageNum = i + 1;
-                const isActive = pageNum === page;
-                return `
+                Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                  const pageNum = i + 1;
+                  const isActive = pageNum === page;
+                  return `
                         <a href="/dashboard/messages?page=${pageNum}" 
                            class="relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                  isActive ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                }">
+                    isActive ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }">
                           ${pageNum}
                         </a>
                       `;
-              }).join('')
-            }
+                }).join('')
+              }
                     
                     ${
-              pagination.totalPages > 5
-                ? `
+                pagination.totalPages > 5
+                  ? `
                       <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
                         ...
                       </span>
                     `
-                : ''
-            }
+                  : ''
+              }
                     
                     ${
-              pagination.hasNext
-                ? `
+                pagination.hasNext
+                  ? `
                       <a href="/dashboard/messages?page=${
-                  page + 1
-                }" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    page + 1
+                  }" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                         <span class="sr-only">Next</span>
                         <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
                         </svg>
                       </a>
                     `
-                : ''
-            }
+                  : ''
+              }
                   </nav>
                 </div>
               </div>
             </div>
             `
-            : ''
-        }
+              : ''
+          }
           </div>
         `;
 
-        return c.html(this.generateHTML('Messages - Done Dashboard', content));
-      } catch (error) {
-        console.error('Messages error:', error);
-        const content = `
+          return c.html(this.generateHTML('Messages - Done Dashboard', content));
+        } catch (error) {
+          console.error('Messages error:', error);
+          const content = `
           <div class="px-4 py-6 sm:px-0">
             <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               <strong>Error:</strong> ${error instanceof Error ? error.message : 'Unknown error'}
             </div>
           </div>
         `;
-        return c.html(this.generateHTML('Error - Done Dashboard', content));
-      }
-    }));
+          return c.html(this.generateHTML('Error - Done Dashboard', content));
+        }
+      }),
+    );
 
     // Individual message detail (protected)
-    this.hono.get('/message/:id', this.requireAuth(async (c: any) => {
-      try {
-        const messageId = c.req.param('id');
-        const page = c.req.query('page') || '1';
-        const [message, logs] = await Promise.all([
-          this.client.getMessage(messageId),
-          this.client.getMessageLogs(messageId),
-        ]);
+    this.hono.get(
+      '/message/:id',
+      this.requireAuth(async (c: any) => {
+        try {
+          const messageId = c.req.param('id');
+          const page = c.req.query('page') || '1';
+          const [message, logs] = await Promise.all([
+            this.client.getMessage(messageId),
+            this.client.getMessageLogs(messageId),
+          ]);
 
-        if (!message) {
-          const content = `
+          if (!message) {
+            const content = `
             <div class="px-4 py-6 sm:px-0">
               <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                 <strong>Error:</strong> Message not found
@@ -865,36 +877,36 @@ export class DashboardRoutes {
               </div>
             </div>
           `;
-          return c.html(this.generateHTML('Message Not Found - Done Dashboard', content), 404);
-        }
+            return c.html(this.generateHTML('Message Not Found - Done Dashboard', content), 404);
+          }
 
-        const getStatusBadge = (status: string) => {
-          const colors = {
-            'CREATED': 'bg-blue-100 text-blue-800',
-            'QUEUED': 'bg-yellow-100 text-yellow-800',
-            'DELIVER': 'bg-purple-100 text-purple-800',
-            'SENT': 'bg-green-100 text-green-800',
-            'RETRY': 'bg-orange-100 text-orange-800',
-            'DLQ': 'bg-red-100 text-red-800',
-            'ARCHIVED': 'bg-gray-100 text-gray-800',
-            'FAILED': 'bg-red-100 text-red-800',
+          const getStatusBadge = (status: string) => {
+            const colors = {
+              'CREATED': 'bg-blue-100 text-blue-800',
+              'QUEUED': 'bg-yellow-100 text-yellow-800',
+              'DELIVER': 'bg-purple-100 text-purple-800',
+              'SENT': 'bg-green-100 text-green-800',
+              'RETRY': 'bg-orange-100 text-orange-800',
+              'DLQ': 'bg-red-100 text-red-800',
+              'ARCHIVED': 'bg-gray-100 text-gray-800',
+              'FAILED': 'bg-red-100 text-red-800',
+            };
+            return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
           };
-          return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-        };
 
-        const formatDate = (dateString: string) => {
-          return new Date(dateString).toLocaleString();
-        };
+          const formatDate = (dateString: string) => {
+            return new Date(dateString).toLocaleString();
+          };
 
-        const formatPayload = (payload: unknown) => {
-          return JSON.stringify(payload, null, 2);
-        };
+          const formatPayload = (payload: unknown) => {
+            return JSON.stringify(payload, null, 2);
+          };
 
-        const formatHeaders = (headers: unknown) => {
-          return JSON.stringify(headers, null, 2);
-        };
+          const formatHeaders = (headers: unknown) => {
+            return JSON.stringify(headers, null, 2);
+          };
 
-        const content = `
+          const content = `
           <div class="px-4 py-6 sm:px-0">
             <!-- Tab Navigation -->
             <div class="mb-8">
@@ -959,27 +971,27 @@ export class DashboardRoutes {
                     <dd class="mt-1 text-sm text-gray-900">${formatDate(message.publish_at)}</dd>
                   </div>
                   ${
-          message.updated_at
-            ? `
+            message.updated_at
+              ? `
                   <div>
                     <dt class="text-sm font-medium text-gray-500">Updated At</dt>
                     <dd class="mt-1 text-sm text-gray-900">${formatDate(message.updated_at)}</dd>
                   </div>
                   `
-            : ''
-        }
+              : ''
+          }
                 </dl>
               </div>
 
               <div class="bg-white shadow rounded-lg p-6">
                 <h2 class="text-lg font-medium text-gray-900 mb-4">Headers</h2>
                 ${
-          message.headers && Object.keys(message.headers).length > 0
-            ? `
+            message.headers && Object.keys(message.headers).length > 0
+              ? `
                   <pre class="bg-gray-50 rounded p-4 text-sm overflow-x-auto"><code>${formatHeaders(message.headers)}</code></pre>
                 `
-            : '<p class="text-sm text-gray-500">No custom headers</p>'
-        }
+              : '<p class="text-sm text-gray-500">No custom headers</p>'
+          }
               </div>
 
               <div class="bg-white shadow rounded-lg p-6">
@@ -993,71 +1005,71 @@ export class DashboardRoutes {
               <div class="sticky top-6">
               <h2 class="text-lg font-medium text-gray-900 mb-4">Message History</h2>
               ${
-          logs.length > 0
-            ? `
+            logs.length > 0
+              ? `
                 <div class="flow-root">
                   <ul role="list" class="-mb-8">
                     ${
-              logs.map((log, index) => {
-                const isLast = index === logs.length - 1;
-                const eventDate = new Date(log.created_at);
-                let eventDescription = '';
-                let eventIcon = '';
-                let iconBg = 'bg-gray-400';
+                logs.map((log, index) => {
+                  const isLast = index === logs.length - 1;
+                  const eventDate = new Date(log.created_at);
+                  let eventDescription = '';
+                  let eventIcon = '';
+                  let iconBg = 'bg-gray-400';
 
-                switch (log.type) {
-                  case 'STORE_CREATE_EVENT':
-                    eventDescription = 'Message created';
-                    eventIcon = '✨';
-                    iconBg = 'bg-blue-500';
-                    break;
-                  case 'STORE_UPDATE_EVENT':
-                    if (log.before_data && log.after_data) {
-                      const before = log.before_data as { status?: string };
-                      const after = log.after_data as { status?: string };
-                      if (before.status !== after.status) {
-                        eventDescription = `Status changed from ${before.status} to ${after.status}`;
+                  switch (log.type) {
+                    case 'STORE_CREATE_EVENT':
+                      eventDescription = 'Message created';
+                      eventIcon = '✨';
+                      iconBg = 'bg-blue-500';
+                      break;
+                    case 'STORE_UPDATE_EVENT':
+                      if (log.before_data && log.after_data) {
+                        const before = log.before_data as { status?: string };
+                        const after = log.after_data as { status?: string };
+                        if (before.status !== after.status) {
+                          eventDescription = `Status changed from ${before.status} to ${after.status}`;
 
-                        // Choose icon based on new status
-                        switch (after.status) {
-                          case 'QUEUED':
-                            eventIcon = '⏱️';
-                            iconBg = 'bg-yellow-500';
-                            break;
-                          case 'DELIVER':
-                            eventIcon = '🚀';
-                            iconBg = 'bg-purple-500';
-                            break;
-                          case 'SENT':
-                            eventIcon = '✅';
-                            iconBg = 'bg-green-500';
-                            break;
-                          case 'RETRY':
-                            eventIcon = '🔄';
-                            iconBg = 'bg-orange-500';
-                            break;
-                          case 'DLQ':
-                            eventIcon = '❌';
-                            iconBg = 'bg-red-500';
-                            break;
-                          default:
-                            eventIcon = '📝';
-                            iconBg = 'bg-gray-500';
+                          // Choose icon based on new status
+                          switch (after.status) {
+                            case 'QUEUED':
+                              eventIcon = '⏱️';
+                              iconBg = 'bg-yellow-500';
+                              break;
+                            case 'DELIVER':
+                              eventIcon = '🚀';
+                              iconBg = 'bg-purple-500';
+                              break;
+                            case 'SENT':
+                              eventIcon = '✅';
+                              iconBg = 'bg-green-500';
+                              break;
+                            case 'RETRY':
+                              eventIcon = '🔄';
+                              iconBg = 'bg-orange-500';
+                              break;
+                            case 'DLQ':
+                              eventIcon = '❌';
+                              iconBg = 'bg-red-500';
+                              break;
+                            default:
+                              eventIcon = '📝';
+                              iconBg = 'bg-gray-500';
+                          }
+                        } else {
+                          eventDescription = 'Message updated';
+                          eventIcon = '📝';
+                          iconBg = 'bg-gray-500';
                         }
-                      } else {
-                        eventDescription = 'Message updated';
-                        eventIcon = '📝';
-                        iconBg = 'bg-gray-500';
                       }
-                    }
-                    break;
-                  default:
-                    eventDescription = log.type.replace(/_/g, ' ').toLowerCase();
-                    eventIcon = '📋';
-                    iconBg = 'bg-gray-400';
-                }
+                      break;
+                    default:
+                      eventDescription = log.type.replace(/_/g, ' ').toLowerCase();
+                      eventIcon = '📋';
+                      iconBg = 'bg-gray-400';
+                  }
 
-                return `
+                  return `
                         <li>
                           <div class="relative pb-8">
                             ${!isLast ? '<span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>' : ''}
@@ -1071,14 +1083,14 @@ export class DashboardRoutes {
                                 <div>
                                   <p class="text-sm text-gray-900">${eventDescription}</p>
                                   ${
-                  log.after_data && (log.after_data as { last_errors?: Array<{ message?: string }> }).last_errors
-                    ? `
+                    log.after_data && (log.after_data as { last_errors?: Array<{ message?: string }> }).last_errors
+                      ? `
                                     <p class="mt-1 text-sm text-red-600">
                                       Error: ${((log.after_data as { last_errors?: Array<{ message?: string }> }).last_errors?.[0] || {}).message || 'Unknown error'}
                                     </p>
                                   `
-                    : ''
-                }
+                      : ''
+                  }
                                 </div>
                                 <div class="whitespace-nowrap text-right text-sm text-gray-500">
                                   <time datetime="${eventDate.toISOString()}">${eventDate.toLocaleString()}</time>
@@ -1088,46 +1100,49 @@ export class DashboardRoutes {
                           </div>
                         </li>
                       `;
-              }).join('')
-            }
+                }).join('')
+              }
                   </ul>
                 </div>
               `
-            : '<p class="text-sm text-gray-500">No history available</p>'
-        }
+              : '<p class="text-sm text-gray-500">No history available</p>'
+          }
               </div>
             </div>
           </div>
         </div>
         `;
 
-        return c.html(this.generateHTML(`Message ${message.id} - Done Dashboard`, content));
-      } catch (error) {
-        console.error('Message detail error:', error);
-        const content = `
+          return c.html(this.generateHTML(`Message ${message.id} - Done Dashboard`, content));
+        } catch (error) {
+          console.error('Message detail error:', error);
+          const content = `
           <div class="px-4 py-6 sm:px-0">
             <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               <strong>Error:</strong> ${error instanceof Error ? error.message : 'Unknown error'}
             </div>
           </div>
         `;
-        return c.html(this.generateHTML('Error - Done Dashboard', content));
-      }
-    }));
+          return c.html(this.generateHTML('Error - Done Dashboard', content));
+        }
+      }),
+    );
 
     // Handle message recreation (protected)
-    this.hono.post('/message/:id/recreate', this.requireAuth(async (c: any) => {
-      try {
-        const messageId = c.req.param('id');
-        const page = c.req.query('page') || '1';
-        const message = await this.client.getMessage(messageId);
+    this.hono.post(
+      '/message/:id/recreate',
+      this.requireAuth(async (c: any) => {
+        try {
+          const messageId = c.req.param('id');
+          const page = c.req.query('page') || '1';
+          const message = await this.client.getMessage(messageId);
 
-        if (!message) {
-          return c.text('Message not found', 404);
-        }
+          if (!message) {
+            return c.text('Message not found', 404);
+          }
 
-        const result = await this.client.recreateMessage(message);
-        const content = `
+          const result = await this.client.recreateMessage(message);
+          const content = `
           <div class="px-4 py-6 sm:px-0">
             <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-6">
               <strong>Success!</strong> Message recreated with ID: ${result.id}
@@ -1140,11 +1155,11 @@ export class DashboardRoutes {
             </div>
           </div>
         `;
-        return c.html(this.generateHTML('Message Recreated - Done Dashboard', content));
-      } catch (error) {
-        const messageId = c.req.param('id');
-        const page = c.req.query('page') || '1';
-        const content = `
+          return c.html(this.generateHTML('Message Recreated - Done Dashboard', content));
+        } catch (error) {
+          const messageId = c.req.param('id');
+          const page = c.req.query('page') || '1';
+          const content = `
           <div class="px-4 py-6 sm:px-0">
             <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
               <strong>Error:</strong> ${error instanceof Error ? error.message : 'Unknown error'}
@@ -1152,9 +1167,10 @@ export class DashboardRoutes {
             <a href="/dashboard/message/${messageId}?page=${page}" class="text-blue-600 hover:text-blue-900">← Back to Message</a>
           </div>
         `;
-        return c.html(this.generateHTML('Recreation Failed - Done Dashboard', content));
-      }
-    }));
+          return c.html(this.generateHTML('Recreation Failed - Done Dashboard', content));
+        }
+      }),
+    );
   }
 
   getBasePath(): string {
