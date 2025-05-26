@@ -64,25 +64,25 @@ export class StoreClient {
     if (!response.ok) {
       throw new Error(`Failed to fetch stats: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Transform the API response to match dashboard expectations
     const stats = data.stats || {};
-    
+
     // Transform hourly activity array into expected format
     const hourlyActivity = (data.hourlyActivity || []).map((count: number, hour: number) => ({
       hour: `${hour.toString().padStart(2, '0')}:00`,
-      count: count
+      count: count,
     }));
-    
+
     // Transform daily trend data
     const dailyTrend = (data.trend7d || []).map((day: any) => ({
       date: day.date,
       delivered: day.sent || 0,
-      failed: (day.incoming || 0) - (day.sent || 0)
+      failed: (day.incoming || 0) - (day.sent || 0),
     }));
-    
+
     return {
       total: stats['messages/total'] || 0,
       sent: stats['messages/SENT'] || 0,
@@ -107,8 +107,8 @@ export class StoreClient {
   /**
    * Get paginated list of messages
    */
-  async getMessages(params: { 
-    limit?: number; 
+  async getMessages(params: {
+    limit?: number;
     offset?: number;
     status?: string;
   } = {}): Promise<{
@@ -136,18 +136,18 @@ export class StoreClient {
     if (!response.ok) {
       throw new Error(`Failed to fetch messages: ${response.status}`);
     }
-    
+
     const rawData = await response.json();
-    
+
     // Transform the raw data into expected format
     const allMessages = rawData.map((item: any) => {
       const row = item.data;
-      
+
       // Parse the payload to extract URL and headers
       let parsedPayload: any = {};
       let url = '';
       let headers: Record<string, string> = {};
-      
+
       if (row.payload) {
         try {
           parsedPayload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
@@ -160,7 +160,7 @@ export class StoreClient {
           console.error('Failed to parse payload:', e);
         }
       }
-      
+
       return {
         id: row.id,
         url: url,
@@ -183,7 +183,7 @@ export class StoreClient {
 
     // Apply pagination
     const paginatedMessages = filteredMessages.slice(offset, offset + limit);
-    
+
     return {
       messages: paginatedMessages,
       total: filteredMessages.length,
@@ -211,14 +211,14 @@ export class StoreClient {
     if (!response.ok) {
       throw new Error(`Failed to fetch message: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Extract URL and headers from payload
     const url = data.payload?.url || '';
     const headers = data.payload?.headers || {};
     const payloadData = data.payload?.data || {};
-    
+
     return {
       id: data.id,
       url: url,
@@ -236,19 +236,21 @@ export class StoreClient {
   /**
    * Get logs for a specific message
    */
-  async getMessageLogs(messageId: string): Promise<Array<{
-    id: string;
-    type: string;
-    message_id: string;
-    before_data: any;
-    after_data: any;
-    created_at: string;
-  }>> {
+  async getMessageLogs(messageId: string): Promise<
+    Array<{
+      id: string;
+      type: string;
+      message_id: string;
+      before_data: any;
+      after_data: any;
+      created_at: string;
+    }>
+  > {
     const response = await this.fetch(`/admin/logs/message/${messageId}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch message logs: ${response.status}`);
     }
-    
+
     const data = await response.json();
     return data.logs || [];
   }
@@ -273,17 +275,14 @@ export class StoreClient {
         'Content-Type': 'application/json',
         ...(message.headers || {}),
         // Add delay header if publish_at is in the future
-        ...(message.publish_at && new Date(message.publish_at) > new Date() 
-          ? { 'X-Delay': `${Math.floor((new Date(message.publish_at).getTime() - Date.now()) / 1000)}s` }
-          : {}
-        ),
+        ...(message.publish_at && new Date(message.publish_at) > new Date() ? { 'X-Delay': `${Math.floor((new Date(message.publish_at).getTime() - Date.now()) / 1000)}s` } : {}),
       },
     });
 
     if (!response.ok) {
       throw new Error(`Failed to recreate message: ${response.status}`);
     }
-    
+
     return await response.json();
   }
 }

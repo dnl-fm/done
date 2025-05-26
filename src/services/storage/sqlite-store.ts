@@ -1,6 +1,6 @@
-import type { Client } from 'libsql-core';
+import type { Client, InArgs, InStatement, InValue, Transaction } from 'libsql-core';
 
-export type InMemory = ':memory:';
+type InMemory = ':memory:';
 
 export type SqliteConfig = {
   url: URL | InMemory;
@@ -10,71 +10,98 @@ export type SqliteConfig = {
 export class SqliteStore {
   private client!: Client;
 
-  static async create(urlString: string, authToken?: string) {
-    let url: URL | InMemory;
-    url = ':memory:';
-
-    if (urlString !== ':memory:') {
-      url = new URL(urlString);
-    }
-
-    const sqlite = new SqliteStore({ url, authToken });
-
+  static async create(url: string, authToken?: string) {
+    const sqlite = new SqliteStore({ url: url as URL | InMemory, authToken });
     return await sqlite.getClient();
   }
 
-  constructor(private readonly config: SqliteConfig) {
-  }
+  constructor(private readonly config: SqliteConfig) {}
 
   async getClient() {
     if (!this.client) {
       await this.createClient();
     }
-
     return this.client;
   }
 
   private async createClient() {
-    // in memory
-    if (this.config.url === ':memory:') {
-      const libsqlNode = await import('libsql-node');
-      this.client = libsqlNode.createClient({ url: ':memory:' });
-      await this.setPragma();
+    const url = this.config.url instanceof URL ? this.config.url.toString() : this.config.url;
 
-      return this;
+    // Handle different URL types
+    if (url === ':memory:' || url.startsWith('file:')) {
+      // Local SQLite - use libsql-node
+      const libsqlNode = await import('libsql-node');
+      console.log('Creating local SQLite client with URL:', url);
+
+      this.client = libsqlNode.createClient({ url });
+    } else {
+      // Remote Turso DB - use libsql-web
+      const libsqlWeb = await import('libsql-web');
+      console.log('Creating remote Turso client with URL:', url);
+
+      this.client = libsqlWeb.createClient({
+        url: url,
+        authToken: this.config.authToken,
+      });
     }
 
-    // local db file
-    if (this.isFileUrl(this.config.url)) {
-      const libsqlNode = await import('libsql-node');
-      this.client = libsqlNode.createClient({ url: this.config.url.href });
-      await this.setPragma();
-
-      return this;
-    }
-
-    // remote db
-    // due to deno limitations we need to use libsql-web
-    const libsqlWeb = await import('libsql-web');
-
-    this.client = libsqlWeb.createClient({
-      url: this.config.url.href,
-      authToken: this.config.authToken,
-    });
-
-    return this;
-  }
-
-  private isFileUrl(url: URL): boolean {
-    return url.href.startsWith('file:');
+    await this.setPragma();
   }
 
   private async setPragma() {
-    await this.client.execute('PRAGMA journal_mode = WAL;');
-    await this.client.execute('PRAGMA busy_timeout = 5000;');
-    await this.client.execute('PRAGMA synchronous = NORMAL;');
-    await this.client.execute('PRAGMA cache_size = 2000;');
-    await this.client.execute('PRAGMA temp_store = MEMORY;');
-    await this.client.execute('PRAGMA foreign_keys = true;');
+    // SQLite performance optimizations
+    await this.client.execute('PRAGMA journal_mode = WAL');
+    await this.client.execute('PRAGMA synchronous = NORMAL');
+    await this.client.execute('PRAGMA cache_size = -64000'); // 64MB cache
+    await this.client.execute('PRAGMA temp_store = MEMORY');
+  }
+
+  async runMigrations(migrations: { name: string; sql: string }[]) {
+    // Create migrations table if it doesn't exist
+    await this.client.execute(`
+      CREATE TABLE IF NOT EXISTS migrations (
+        name TEXT PRIMARY KEY,
+        executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Run each migration
+    for (const migration of migrations) {
+      const result = await this.client.execute({
+        sql: 'SELECT 1 FROM migrations WHERE name = ?',
+        args: [migration.name],
+      });
+
+      if (result.rows.length === 0) {
+        console.log(`Running migration: ${migration.name}`);
+        await this.client.execute(migration.sql);
+        await this.client.execute({
+          sql: 'INSERT INTO migrations (name) VALUES (?)',
+          args: [migration.name],
+        });
+      }
+    }
+  }
+
+  async execute(sql: string, args?: InValue[]) {
+    return await this.client.execute({ sql, args: args as InArgs });
+  }
+
+  async batch(statements: { sql: string; args?: InValue[] }[]) {
+    return await this.client.batch(statements.map((stmt) => ({
+      sql: stmt.sql,
+      args: stmt.args as InArgs,
+    })));
+  }
+
+  async transaction(fn: (tx: Transaction) => Promise<void>) {
+    const tx = await this.client.transaction();
+    try {
+      await fn(tx);
+      await tx.commit();
+    } catch (error) {
+      await tx.rollback();
+      throw error;
+    }
   }
 }
