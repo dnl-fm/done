@@ -518,10 +518,11 @@ We're continuously working to make Done even better! Here are some exciting feat
 
 - [ ] **Storage Backend Migration**: Seamlessly migrate data between KV and Turso storage backends
 - [ ] **Data Export/Import**: Tools to backup and restore your message data
-- [ ] **Data Visualization**: Interactive dashboard to view all messages, stats, and logs
+- [ ] **Modern Dashboard**: A sleek, dark-themed analytics dashboard with real-time statistics, message status funnel visualization, and performance metrics (similar to modern analytics platforms)
 - [ ] **Real-time Monitoring**: Live updates of message status and queue health
 - [ ] **Message Management**: Web interface to inspect, retry, or cancel messages
 - [ ] **Analytics Dashboard**: Visual insights into message patterns and performance metrics
+- [ ] **Message Search**: Full-text search capabilities using Orama Cloud for finding messages quickly
 
 Want to contribute to any of these features? We'd love your help! Check out our [GitHub repository](https://github.com/dnl-fm/done) or join us on [Discord](https://discord.gg/JEYJbQgnWp).
 

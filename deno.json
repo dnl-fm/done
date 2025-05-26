@@ -16,7 +16,13 @@
     "dev": "deno run -A --env=.env.local --watch --unstable-kv --unstable-cron src/main.ts",
     "start": "deno run -A --unstable-kv --unstable-cron src/main.ts",
     "clean": "deno fmt -q && deno lint ./src",
-    "test": "deno test -A --unstable-kv tests/"
+    "test": "deno test -A --unstable-kv --env=.env.test tests/",
+    "seed": "sh -c \"curl -X POST -H 'Authorization: Bearer '$AUTH_TOKEN http://localhost:3001/v1/util/seed\"",
+    "seed:small": "sh -c \"curl -X POST -H 'Authorization: Bearer '$AUTH_TOKEN -H 'Content-Type: application/json' -d '{\\\"count\\\":50}' http://localhost:3001/v1/util/seed\"",
+    "seed:medium": "sh -c \"curl -X POST -H 'Authorization: Bearer '$AUTH_TOKEN -H 'Content-Type: application/json' -d '{\\\"count\\\":500}' http://localhost:3001/v1/util/seed\"",
+    "seed:large": "sh -c \"curl -X POST -H 'Authorization: Bearer '$AUTH_TOKEN -H 'Content-Type: application/json' -d '{\\\"count\\\":5000}' http://localhost:3001/v1/util/seed\"",
+    "stats:init": "sh -c \"curl -X POST -H 'Authorization: Bearer '$AUTH_TOKEN http://localhost:3001/v1/util/stats/initialize\"",
+    "migrate:kv-to-turso": "sh -c \"curl -X POST -H 'Authorization: Bearer '$AUTH_TOKEN http://localhost:3001/v1/util/migrate/kv-to-turso\""
   },
   "lint": {
     "include": [

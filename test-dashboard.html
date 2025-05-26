@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Layout Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chart-placeholder {
+            background: #f3f4f6;
+            border: 2px dashed #d1d5db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Dashboard Layout Preview</h1>
+        
+        <!-- Main Dashboard Layout -->
+        <div class="flex gap-6">
+            <!-- Left Side: Stats Cards -->
+            <div class="w-80 flex-shrink-0">
+                <div class="space-y-4 sticky top-6">
+                    <!-- Stats cards -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-sm text-gray-500">Total Messages</h3>
+                        <p class="text-2xl font-bold">1,234</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-sm text-gray-500">Sent</h3>
+                        <p class="text-2xl font-bold text-green-600">987</p>
+                        <p class="text-sm text-gray-600">80% success rate</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-sm text-gray-500">Failed</h3>
+                        <p class="text-2xl font-bold text-red-600">247</p>
+                        <p class="text-sm text-gray-600">20% failure rate</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-sm text-gray-500">Pending</h3>
+                        <p class="text-2xl font-bold text-yellow-600">45</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-sm text-gray-500">Last 24 Hours</h3>
+                        <p class="text-2xl font-bold">234</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-sm text-gray-500">Last 7 Days</h3>
+                        <p class="text-2xl font-bold">1,567</p>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-sm text-gray-500">Storage Type</h3>
+                        <p class="text-xl font-medium">KV</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Side: Charts -->
+            <div class="flex-1 space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium mb-4">7-Day Message Trend</h2>
+                    <div class="chart-placeholder">Chart 1</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium mb-4">Hourly State Changes</h2>
+                    <div class="chart-placeholder">Chart 2</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-medium mb-4">All Message States</h2>
+                    <div class="grid grid-cols-7 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-blue-600">10</div>
+                            <div class="text-sm text-gray-500">Created</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-yellow-600">5</div>
+                            <div class="text-sm text-gray-500">Queued</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-purple-600">3</div>
+                            <div class="text-sm text-gray-500">Delivering</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-green-600">987</div>
+                            <div class="text-sm text-gray-500">Sent</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-orange-600">2</div>
+                            <div class="text-sm text-gray-500">Retry</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-red-600">247</div>
+                            <div class="text-sm text-gray-500">Failed</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-gray-600">0</div>
+                            <div class="text-sm text-gray-500">Archived</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

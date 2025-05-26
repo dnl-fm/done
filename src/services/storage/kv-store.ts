@@ -1,5 +1,6 @@
 import { diff } from 'deep-object-diff';
 import { Security } from '../../utils/security.ts';
+import { Env } from '../../utils/env.ts';
 
 export enum SYSTEM_MESSAGE_TYPE {
   STORE_CREATE_EVENT = 'STORE_CREATE_EVENT',
@@ -325,7 +326,7 @@ export abstract class KvStore {
     // enqueue message
     await this.kv.enqueue(log);
 
-    if (Deno.env.get('ENABLE_LOGS') !== 'true') {
+    if (Env.get('ENABLE_LOGS') !== 'true') {
       return;
     }
 
