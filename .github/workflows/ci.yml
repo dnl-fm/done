@@ -140,6 +140,11 @@ jobs:
     needs: [test, security, validate-api]
     if: always()
     
+    permissions:
+      contents: read
+      pull-requests: write # For PR comments
+      issues: write # For issue comments
+    
     steps:
       - name: Check overall status
         run: |
