@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { StoreClient } from '../../dashboard/utils/store-client.ts';
+import { StoreClient } from '../services/dashboard/store-client.ts';
 
 export class DashboardRoutes {
   private hono: Hono;
