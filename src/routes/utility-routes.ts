@@ -127,8 +127,11 @@ export class UtilityRoutes {
           const payload = this.generatePayload(url);
           const publishAt = this.getScheduleTime(messageConfig.type);
 
-          // Generate a unique ID
-          const messageId = `MSG-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+          // Generate a unique ID with slight time offset to avoid duplicates
+          const messageId = `MSG-${Date.now() + i}-${Math.random().toString(36).substring(2, 9)}`;
+
+          // Distribute created_at across today's hours for better visualization
+          const createdAt = this.getDistributedCreatedAt(i, messages.length);
 
           // Determine status based on message type and age
           let status: MESSAGE_STATUS = 'CREATED';
@@ -205,8 +208,8 @@ export class UtilityRoutes {
                 created_at: new Date(err.timestamp),
               })),
               publish_at: new Date(publishAt),
-              created_at: new Date(publishAt), // For historical data, created_at = publish_at
-              updated_at: new Date(status !== 'CREATED' ? new Date(publishAt).getTime() + 30000 : publishAt),
+              created_at: createdAt,
+              updated_at: createdAt,
             };
 
             await messagesStore.create(message);
@@ -680,6 +683,22 @@ export class UtilityRoutes {
     }
 
     return messages;
+  }
+
+  private getDistributedCreatedAt(index: number, total: number): Date {
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // Distribute messages across the last 24 hours
+    const hoursAgo = 24 * (1 - index / total);
+    const createdTime = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+
+    // Add some randomness within the hour
+    const minuteOffset = Math.floor(Math.random() * 60);
+    createdTime.setMinutes(minuteOffset);
+
+    return createdTime;
   }
 
   private getScheduleTime(type: 'immediate' | 'scheduled' | 'past'): string {
