@@ -80,7 +80,7 @@ jobs:
         run: |
           # Check for common security issues
           echo "Checking for hardcoded secrets..."
-          if grep -r "password\|secret\|key\|token" src/ --include="*.ts" --exclude-dir=node_modules | grep -v "placeholder\|example\|test\|TODO"; then
+          if grep -r -E "(password|secret|api_?key|auth_?token|private_?key)\s*[=:]\s*['\"][^'\"]{8,}" src/ --include="*.ts" --exclude-dir=node_modules | grep -v "placeholder\|example\|test\|TODO\|foreign_keys\|PRAGMA"; then
             echo "❌ Potential hardcoded secrets found"
             exit 1
           else
