@@ -13,7 +13,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Deno
         uses: denoland/setup-deno@v1
@@ -140,7 +140,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check README exists and is updated
         run: |
